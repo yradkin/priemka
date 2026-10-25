@@ -419,7 +419,7 @@ textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft
       <div id="rooms" class="col"></div>
     </section>
   </div>
-  <div class="build">BUILD 2026-10-25.05</div>
+  <div class="build">BUILD 2026-10-25.06</div>
 </div>
 
 <div class="sheet" id="sheet" hidden role="dialog" aria-label="Ввод размера">
@@ -1295,18 +1295,30 @@ async function buildReport(){
 }
 let repFiles=[];
 function blobDownload(f){const a=document.createElement('a');a.href=f.url;a.download=f.name;document.body.appendChild(a);a.click();a.remove();}
-async function saveImg(f){try{if(S.dl){await S.dl.save({filename:f.name,data:f.blob});}else if(STANDALONE&&!TGA){blobDownload(f);}}catch(e){if(e&&e.code==='unavailable')toast('Сохранение недоступно, удерживайте картинку пальцем.');}}
+let repCanShare=false;
+const asFile=f=>new File([f.blob],f.name,{type:'image/png'});
+async function shareFiles(list){try{await navigator.share({files:list.map(asFile),title:'Обмер · Тип 13'});return true;}catch(e){return e&&e.name==='AbortError';}}
+function openImg(f){const w=window.open('','_blank');if(w){w.document.write('<title>'+f.name+'</title><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#0a0e15"><p style="color:#ccc;font:14px -apple-system,sans-serif;padding:12px">Удерживайте картинку → «Сохранить в Фото»</p><img src="'+(f.data||f.url)+'" style="width:100%;display:block">');}else toast('Удерживайте картинку пальцем → «Сохранить изображение».');}
+async function saveImg(f){
+  try{
+    if(S.dl){await S.dl.save({filename:f.name,data:f.blob});return;}
+    if(repCanShare){if(await shareFiles([f]))return;}
+    if(STANDALONE&&!TGA){blobDownload(f);toast('Если картинка не появилась в Фото или Файлах — удерживайте её пальцем → «Сохранить изображение».');}
+  }catch(e){toast('Сохранение недоступно — удерживайте картинку пальцем.');}
+}
 document.getElementById('bReport').addEventListener('click',async()=>{
   const btn=document.getElementById('bReport');btn.disabled=true;const old=btn.textContent;btn.textContent='Собираю…';
   try{repFiles=await buildReport();}catch(e){toast('Не удалось собрать отчёт: '+((e&&e.message)||e));btn.disabled=false;btn.textContent=old;return;}
   btn.disabled=false;btn.textContent=old;
   const list=document.getElementById('repList');list.innerHTML='';
   const canSave=!!(S.dl||(STANDALONE&&!TGA));
-  let canShare=false;try{canShare=STANDALONE&&!!navigator.canShare&&navigator.canShare({files:[new File([repFiles[0].blob],repFiles[0].name,{type:'image/png'})]});}catch(e){}
+  let canShare=false;try{canShare=STANDALONE&&!!navigator.share&&!!navigator.canShare&&navigator.canShare({files:[asFile(repFiles[0])]});}catch(e){}
+  repCanShare=canShare;
+  if(!TGA){for(const f of repFiles){if(!f.data)f.data=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(f.blob);});}}
   const hint=document.createElement('p');hint.className='rep-hint';
-  hint.textContent=TGA?'Telegram не даёт сохранять файлы из мини-приложений. Нажмите «Открыть в браузере» — замеры перенесутся, и там отчёт сохранится в Фото. Можно также попробовать удержать картинку пальцем.':(canShare?'«Поделиться» → «Сохранить изображения» положит картинки в Фото. ':'')+(TGA?'':'Можно также удерживать картинку пальцем → «Сохранить изображение».');list.appendChild(hint);
+  hint.textContent=TGA?'Telegram не даёт сохранять файлы из мини-приложений. Нажмите «Открыть в браузере»: замеры перенесутся, там отчёт сохраняется в Фото.':(canShare?'«Сохранить все» → «Сохранить изображения» — картинки попадут в Фото. ':'')+'Если ничего не сохраняется — удерживайте картинку пальцем → «Сохранить изображение». Если страница открыта внутри Telegram, нажмите ⋯ → «Открыть в Safari».';list.appendChild(hint);
   if(TGA){for(const f of repFiles){f.data=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(f.blob);});}}
-  repFiles.forEach((f,i)=>{const fig=document.createElement('figure');const im=document.createElement('img');im.src=f.data||f.url;im.alt='Страница отчёта '+(i+1);
+  repFiles.forEach((f,i)=>{const fig=document.createElement('figure');const im=document.createElement('img');im.src=f.data||f.url;if(!S.dl)im.addEventListener('click',()=>openImg(f));im.alt='Страница отчёта '+(i+1);
     const cap=document.createElement('figcaption');const s=document.createElement('span');s.textContent='Стр. '+(i+1)+' · '+f.w+'×'+f.h;cap.appendChild(s);
     if(canSave){const b=document.createElement('button');b.type='button';b.className='secondary-btn sm';b.textContent='Сохранить';b.addEventListener('click',()=>saveImg(f));cap.appendChild(b);}
     fig.append(im,cap);list.appendChild(fig);});
@@ -1328,8 +1340,8 @@ function importFromHash(){
     setTab('sum');toast('Замеры перенесены из Telegram. Нажмите «Отчёт картинками».');
   }catch(e){toast('Не удалось перенести замеры из ссылки.');}
 }
-document.getElementById('repSave').addEventListener('click',async()=>{for(const f of repFiles){await saveImg(f);}});
-document.getElementById('repShare').addEventListener('click',()=>{try{navigator.share({files:repFiles.map(f=>new File([f.blob],f.name,{type:'image/png'})),title:'Обмер · Тип 13'}).catch(()=>{});}catch(e){}});
+document.getElementById('repSave').addEventListener('click',async()=>{if(!S.dl&&repCanShare){if(await shareFiles(repFiles))return;}for(const f of repFiles){await saveImg(f);}});
+document.getElementById('repShare').addEventListener('click',()=>{shareFiles(repFiles);});
 document.getElementById('repClose').addEventListener('click',()=>{document.getElementById('rep').hidden=true;repFiles.forEach(f=>URL.revokeObjectURL(f.url));repFiles=[];document.getElementById('repList').innerHTML='';});
 
 /* ---------- Telegram ---------- */
