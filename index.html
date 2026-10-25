@@ -341,7 +341,6 @@ textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft
           <div class="seg" role="group" aria-label="Слой плана" id="layers">
             <button type="button" data-layer="dims" aria-pressed="true" title="Размеры, проёмы и точки">Размеры</button>
             <button type="button" data-layer="h" aria-pressed="false" title="Высота потолка в углах и центре каждой комнаты">Потолок</button>
-            <button type="button" data-layer="fl" aria-pressed="false" title="Пол от лазерной линии в углах и центре">Пол</button>
           </div>
           <div class="seg" role="group" aria-label="Масштаб">
             <button type="button" id="zOut" aria-label="Уменьшить" title="Уменьшить">−</button>
@@ -400,7 +399,6 @@ textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft
           <li>У каждой стены — цепочка «угол → простенок → проём → простенок → угол» и общий размер. Приложение само сверит сумму.</li>
           <li>Стены меряйте у пола и под потолком, записывайте меньшее, разницу — в заметки.</li>
           <li>Диагонали: до 10 мм нормально, больше 20 мм заметно при плитке и ламинате.</li>
-          <li>Пол: лазерный уровень ставится один раз на всю квартиру, меряйте от линии вниз до пола. Больше число — ниже пол.</li>
           <li>Инженерные точки привязывайте к левой и верхней стене комнаты так, как она нарисована на плане.</li>
           <li>Трещины, сколы, мокрые пятна — в заметки и на фото, для акта замечаний.</li>
         </ol>
@@ -414,7 +412,7 @@ textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft
       <div id="rooms" class="col"></div>
     </section>
   </div>
-  <div class="build">BUILD 2026-10-25.03</div>
+  <div class="build">BUILD 2026-10-25.04</div>
 </div>
 
 <div class="sheet" id="sheet" hidden role="dialog" aria-label="Ввод размера">
@@ -584,7 +582,6 @@ function fields(r){
   if(r.diag){const W=r.dims.find(d=>d[0]==='W')[2],L=r.dims.find(d=>d[0]==='L')[2];const dd=Math.round(Math.hypot(W,L));
     ['d1','d2'].forEach((k,i)=>f.push({k,label:'Диагональ '+(i+1),full:'Диагональ '+(i+1),design:dd,approx:true,grp:'diag'}));}
   HEIGHTS.forEach(h=>f.push({k:h[0],label:h[1],full:'Высота потолка, '+h[1].toLowerCase(),design:null,grp:'h'}));
-  FLOOR.forEach(h=>f.push({k:h[0],label:h[1],full:'Пол от лазерной линии, '+h[1].toLowerCase(),design:null,grp:'floor'}));
   WALLQ.concat(r.extra||[]).forEach(h=>f.push({k:h[0],label:h[1],full:h[1],design:null,grp:'walls'}));
   return f;
 }
@@ -610,7 +607,6 @@ function geo(r){
   const out=[];const d1=val(r.id,'d1'),d2=val(r.id,'d2');
   if(d1!=null&&d2!=null){const d=Math.abs(d1-d2);out.push({t:'diag',d,c:lvl(d,10,20)});}
   const h=spread(r.id,HEIGHTS.map(x=>x[0]));if(h)out.push({t:'h',d:h.d,min:h.mn,max:h.mx,c:lvl(h.d,10,20)});
-  const fl=spread(r.id,FLOOR.map(x=>x[0]));if(fl)out.push({t:'floor',d:fl.d,c:lvl(fl.d,10,20)});
   const wv=val(r.id,'wv');if(wv!=null)out.push({t:'wv',d:wv,c:lvl(wv,10,20)});
   const wf=val(r.id,'wf');if(wf!=null)out.push({t:'wf',d:wf,c:lvl(wf,5,10)});
   return out;
@@ -780,7 +776,6 @@ function buildRooms(){
       b.appendChild(addBtns(r,['riser','vent','heat','elec','low','beam','other']));body.appendChild(b);}
     if(r.diag){const b=grp('Диагонали','≈ расчёт по эскизу');b.appendChild(cells(r,fs.filter(f=>f.grp==='diag')));b.appendChild(calc('calcD-'+r.id));body.appendChild(b);}
     {const b=grp('Высота потолка','углы и центр, как на плане','Стрелка показывает угол комнаты так, как она нарисована на плане');b.appendChild(cgrid(r,fs.filter(f=>f.grp==='h')));b.appendChild(calc('calcH-'+r.id));body.appendChild(b);}
-    {const b=grp('Уровень пола','от лазерной линии вниз','Лазер ставится один раз на всю квартиру. Больше число — ниже пол.');b.appendChild(cgrid(r,fs.filter(f=>f.grp==='floor')));b.appendChild(calc('calcF-'+r.id));body.appendChild(b);}
     {const b=grp('Стены','мм');b.appendChild(cells(r,fs.filter(f=>f.grp==='walls')));body.appendChild(b);}
     {const b=grp('Заметки и дефекты','');const ta=document.createElement('textarea');ta.id='n-'+r.id;ta.dataset.room=r.id;ta.placeholder='Трещины, перепады, завал стен, сколы, мокрые пятна…';ta.setAttribute('aria-label','Заметки: '+r.name);b.appendChild(ta);body.appendChild(b);}
     det.appendChild(body);
@@ -1239,9 +1234,9 @@ async function buildReport(){
         const f=i.parts.map(p=>p.m!=null?p.m:('≈'+(p.d!=null?p.d:'?'))).join(' + ')+' = '+i.sum+' · общий '+(i.tot.m!=null?i.tot.m:'≈'+i.tot.d);
         tx(cur.x,fitT(cur.x,f,W-2*P-200,23,600),P,cur.y+54,23,C.txt,600);rpill(cur.x,st[0],W-P,cur.y+20,st[1],true);cur.y+=82;}}
       const hv=HEIGHTS.map(h=>val(r.id,h[0])),fv=FLOOR.map(h=>val(r.id,h[0]));
-      if(hv.some(v=>v!=null)||fv.some(v=>v!=null)){
-        await ensure(330);const bw=(W-2*P-24)/2,bh=280;
-        [[hv,'Потолок'],[fv,'Пол от линии']].forEach(([vs,t],bi)=>{
+      if(hv.some(v=>v!=null)){
+        await ensure(330);const bw=W-2*P,bh=280;
+        [[hv,'Потолок']].forEach(([vs,t],bi)=>{
           const X=P+bi*(bw+24),Y=cur.y,have=vs.filter(v=>v!=null),mn=have.length?Math.min(...have):null,mx=have.length?Math.max(...have):null;
           tx(cur.x,t.toUpperCase(),X,Y+22,17,C.t3,700);
           if(have.length>1)tx(cur.x,'перепад '+(mx-mn)+' мм',X+bw,Y+22,18,C[RC[lvl(mx-mn,10,20)]],700,'right');
