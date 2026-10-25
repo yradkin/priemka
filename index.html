@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<title>Приёмка квартиры, Тип 13</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script>try{var t=localStorage.getItem('priemka-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<style>
+/* Layout: слой «Панель» в духе Creative Team Tools — липкий стеклянный топбар, план слева (sticky), складные панели справа; телефон — вкладки и нижняя панель ввода. Акцент — лазурный вместо лавандового. */
+:root{
+  --bg:#e8edf4; --surface:rgba(255,255,255,.84); --surface-solid:#ffffff; --surface-2:rgba(22,40,70,.045);
+  --field:#f2f5f9; --line:rgba(22,40,70,.11); --line-2:rgba(22,40,70,.22);
+  --txt:#121722; --txt-2:rgba(18,23,34,.66); --txt-3:rgba(18,23,34,.50);
+  --accent:#1f6fd6; --accent-2:#3d8cf0; --accent-soft:rgba(31,111,214,.12); --accent-ink:#164f9c;
+  --grad-a:#4f9bff; --grad-b:#1f6fd6; --glow:rgba(31,111,214,.30);
+  --good:#1E8F62; --good-soft:rgba(30,143,98,.14); --warn:#B0791A; --warn-soft:rgba(210,150,40,.16); --crit:#C33B50; --crit-soft:rgba(203,59,80,.13);
+  --plan:#fbfcfe; --dots:rgba(22,40,70,.10); --wall:#1b2230; --hatch:#8c97a6; --glass-win:#cfe3f7; --dimline:#3a4656; --axis:#d0453a; --axis-soft:#eaa69e;
+  --blob-1:rgba(79,155,255,.22); --blob-2:rgba(64,200,190,.14);
+  --shadow:0 20px 46px -30px rgba(20,40,80,.35);
+  --r:20px; --r-card:17px; --r-sm:12px;
+  --ease-out:cubic-bezier(.16,.84,.3,1);
+  --f:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Inter,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#070a10; --surface:rgba(17,23,35,.80); --surface-solid:#111723; --surface-2:rgba(255,255,255,.05);
+  --field:rgba(255,255,255,.06); --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.20);
+  --txt:#f2f5fb; --txt-2:rgba(242,245,251,.66); --txt-3:rgba(242,245,251,.46);
+  --accent:#6fb1ff; --accent-2:#9cc8ff; --accent-soft:rgba(111,177,255,.16); --accent-ink:#bcd9ff;
+  --grad-a:#7cbcff; --grad-b:#3f86ea; --glow:rgba(111,177,255,.32);
+  --good:#5ec89b; --good-soft:rgba(94,200,155,.16); --warn:#e7bd5c; --warn-soft:rgba(231,189,92,.16); --crit:#ef8397; --crit-soft:rgba(239,131,151,.16);
+  --plan:#0b1018; --dots:rgba(255,255,255,.07); --wall:#dbe3ee; --hatch:#7d8899; --glass-win:#1d3a58; --dimline:#b7c2d0; --axis:#ff8a7c; --axis-soft:#7a3d36;
+  --blob-1:rgba(79,155,255,.16); --blob-2:rgba(64,200,190,.08);
+  --shadow:0 20px 46px -30px rgba(0,0,0,.7);
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#070a10; --surface:rgba(17,23,35,.80); --surface-solid:#111723; --surface-2:rgba(255,255,255,.05);
+  --field:rgba(255,255,255,.06); --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.20);
+  --txt:#f2f5fb; --txt-2:rgba(242,245,251,.66); --txt-3:rgba(242,245,251,.46);
+  --accent:#6fb1ff; --accent-2:#9cc8ff; --accent-soft:rgba(111,177,255,.16); --accent-ink:#bcd9ff;
+  --grad-a:#7cbcff; --grad-b:#3f86ea; --glow:rgba(111,177,255,.32);
+  --good:#5ec89b; --good-soft:rgba(94,200,155,.16); --warn:#e7bd5c; --warn-soft:rgba(231,189,92,.16); --crit:#ef8397; --crit-soft:rgba(239,131,151,.16);
+  --plan:#0b1018; --dots:rgba(255,255,255,.07); --wall:#dbe3ee; --hatch:#7d8899; --glass-win:#1d3a58; --dimline:#b7c2d0; --axis:#ff8a7c; --axis-soft:#7a3d36;
+  --blob-1:rgba(79,155,255,.16); --blob-2:rgba(64,200,190,.08);
+  --shadow:0 20px 46px -30px rgba(0,0,0,.7);
+  color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:var(--f);font-size:14px;line-height:1.48;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;
+  background-image:radial-gradient(900px 600px at 8% -10%,var(--blob-1),transparent 70%),radial-gradient(800px 600px at 100% 10%,var(--blob-2),transparent 70%);background-attachment:fixed}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--bg)}
+.wrap{max-width:1280px;margin:0 auto;padding-block:14px 40px;padding-left:max(22px,env(safe-area-inset-left,0px));padding-right:max(22px,env(safe-area-inset-right,0px))}
+.num{font-variant-numeric:tabular-nums}
+
+/* топбар */
+.topbar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 14px);z-index:30;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px 10px 12px;border-radius:22px;
+  background:var(--surface);-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);border:1px solid var(--line);box-shadow:var(--shadow)}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.logo{width:36px;height:36px;border-radius:11px;flex:none;display:grid;place-items:center;background:linear-gradient(140deg,var(--grad-a),var(--grad-b));box-shadow:0 6px 16px -6px var(--glow)}
+.logo svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand b{display:block;font-size:14.5px;font-weight:700;line-height:1.15}
+.brand small{display:block;font-size:11.5px;color:var(--txt-3)}
+.tb-right{display:flex;align-items:center;gap:8px}
+.save{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--txt-2);white-space:nowrap}
+.save .dot{width:8px;height:8px;border-radius:50%;background:var(--txt-3)}
+.save.cloud .dot{background:var(--good);box-shadow:0 0 0 3px var(--good-soft)} .save.local .dot{background:var(--warn);box-shadow:0 0 0 3px var(--warn-soft)} .save.err .dot{background:var(--crit)}
+.iconbtn{all:unset;cursor:pointer;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--field);border:1px solid var(--line);color:var(--txt)}
+.iconbtn:hover{border-color:var(--line-2)}
+.iconbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.iconbtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ic-sun{display:none}
+:root[data-theme="dark"] .ic-sun{display:block} :root[data-theme="dark"] .ic-moon{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ic-sun{display:block}:root:not([data-theme="light"]) .ic-moon{display:none}}
+
+.head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:22px 0 4px}
+h1{font-size:24px;font-weight:700;letter-spacing:-.015em;margin:0;line-height:1.15}
+.version{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:100px;background:var(--accent-soft);color:var(--accent-ink)}
+.subtitle{font-size:14px;color:var(--txt-2);margin:0 0 14px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 12px;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{all:unset;cursor:pointer;flex:none;display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--txt);white-space:nowrap}
+.chip .n{font-size:11px;opacity:.5;font-variant-numeric:tabular-nums}
+.chip .st{width:7px;height:7px;border-radius:50%;background:var(--line-2)}
+.chip .st.ok{background:var(--good)} .chip .st.warn{background:var(--warn)} .chip .st.bad{background:var(--crit)}
+.chip:hover{border-color:var(--line-2)}
+.chip[aria-pressed="true"]{background:var(--txt);color:var(--bg);border-color:var(--txt)}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{background:rgba(255,255,255,.92);color:#0a0a14}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .chip[aria-pressed="true"]{background:rgba(255,255,255,.92);color:#0a0a14}}
+.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);min-width:0;animation:rise .55s var(--ease-out) both}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.planbox{position:sticky;top:calc(env(safe-area-inset-top,0px) + 92px);overflow:hidden}
+.planbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line)}
+.h2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--txt-3);margin:0}
+.planbar .ttl{font-size:14px;font-weight:700;margin-top:2px}
+.seg{display:inline-flex;background:var(--field);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px}
+.seg button{all:unset;cursor:pointer;font-size:13px;font-weight:600;padding:6px 12px;border-radius:9px;color:var(--txt);text-align:center;min-width:14px}
+.seg button:hover{background:var(--surface-solid)}
+.seg button:focus-visible{outline:2px solid var(--accent)}
+.planscroll{height:calc(100vh - 210px);min-height:380px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;position:relative;overflow:hidden;
+  background-color:var(--plan);background-image:radial-gradient(var(--dots) 1.2px,transparent 1.3px);background-size:24px 24px}
+.planscroll:active{cursor:grabbing}
+#plan{display:block;width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;padding:9px 12px;font-size:11.5px;color:var(--txt-3);border-top:1px solid var(--line)}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:6px}
+
+/* svg */
+#plan text{font-family:var(--f);font-variant-numeric:tabular-nums}
+.wall{fill:url(#hatch);stroke:var(--wall);stroke-width:1.6}
+.wall.thin{stroke-width:1.2}
+.axis{stroke:var(--axis-soft);stroke-width:1.3;stroke-dasharray:26 7 4 7}
+.axbub circle{fill:var(--plan);stroke:var(--axis);stroke-width:2}
+.axbub text{fill:var(--axis);font-size:22px;font-weight:700;text-anchor:middle;dominant-baseline:central}
+.adim .ln{stroke:var(--axis);stroke-width:1.5}
+.adim .tk{stroke:var(--axis);stroke-width:2.6}
+.adim text{font-size:26px;font-weight:700;fill:var(--axis)}
+.hi{fill:var(--accent);opacity:.08}
+.opn{cursor:pointer}
+.opn rect{fill:var(--glass-win);stroke:var(--wall);stroke-width:1.2}
+.opn line.g{stroke:var(--wall);stroke-width:1}
+.opn .hit{stroke:transparent;stroke-width:30;fill:none}
+.opn.on rect{stroke:var(--accent);stroke-width:3.5}
+.door{stroke:var(--txt-3);stroke-width:2;stroke-dasharray:8 6;fill:none}
+.opn.on .door{stroke:var(--accent);stroke-width:4}
+.ext{stroke:var(--dimline);stroke-width:1;opacity:.65}
+.dim{cursor:pointer}
+.dim .ln{stroke:var(--dimline);stroke-width:1.4}
+.dim .tk{stroke:var(--txt);stroke-width:2.2}
+.dim .hit{stroke:transparent;stroke-width:36}
+.dim text{font-size:24px;fill:var(--txt-2);font-weight:500}
+.dim.op text{fill:var(--accent)}
+.dim text .m{font-weight:700}
+.dim text .m.ok{fill:var(--good)} .dim text .m.warn{fill:var(--warn)} .dim text .m.bad{fill:var(--crit)} .dim text .m.na{fill:var(--accent)}
+.dim text .d{font-size:18px;font-weight:400}
+.dim:hover .ln,.dim.on .ln,.dim.on .ext{stroke:var(--accent);stroke-width:2.8;opacity:1}
+.dim.on text{fill:var(--accent)}
+.pt{cursor:pointer}
+.pt .mk{fill:var(--accent);stroke:var(--plan);stroke-width:3}
+.pt .mk.o{fill:none;stroke:var(--accent);stroke-width:3;stroke-dasharray:8 5}
+.pt text{font-size:17px;font-weight:700;fill:#fff;text-anchor:middle;dominant-baseline:central}
+.pt.on .mk{stroke:var(--txt)}
+.rlabel{cursor:pointer}
+.rlabel .n{font-weight:700;font-size:31px;fill:var(--txt);text-anchor:middle}
+.rlabel .a{font-size:20px;fill:var(--txt-3);text-anchor:middle}
+.rlabel .am{font-size:20px;font-weight:700;fill:var(--accent);text-anchor:middle}
+.entry{font-size:23px;fill:var(--txt-3);font-weight:600}
+svg.solo [data-room]:not(.cur){opacity:.15}
+svg [data-room]{transition:opacity .25s}
+
+/* колонка */
+.col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.pbody{padding:14px 16px 16px}
+.phead{display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.kpi{background:var(--surface-2);border-radius:var(--r-sm);padding:10px 12px}
+.kpi .k{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt-3)}
+.kpi .v{font-size:26px;font-weight:660;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:2px}
+.bar{height:5px;background:var(--surface-2);border-radius:99px;margin:14px 0 2px;overflow:hidden}
+.bar>div{height:100%;background:linear-gradient(90deg,var(--grad-a),var(--grad-b));width:0;transition:width .3s;border-radius:99px}
+.tablewrap{overflow-x:auto;margin-top:12px;border-radius:var(--r-sm);border:1px solid var(--line)}
+.areas{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13.5px}
+.areas th,.areas td{text-align:right;padding:9px 12px;border-bottom:1px solid var(--line)}
+.areas th:first-child,.areas td:first-child{text-align:left}
+.areas th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt-3);background:var(--surface-2)}
+.areas tbody tr{cursor:pointer}
+.areas tbody tr:hover td{background:var(--surface-2)}
+.areas tfoot td{font-weight:700;border-bottom:0}
+.note{font-size:11.5px;color:var(--txt-3);margin-top:10px}
+.note b{color:var(--txt);font-variant-numeric:tabular-nums}
+.note:empty{display:none}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+.action-btn{all:unset;cursor:pointer;font-size:13.5px;font-weight:600;color:#fff;padding:11px 16px;border-radius:13px;background:linear-gradient(140deg,var(--grad-a),var(--grad-b));box-shadow:0 8px 20px -10px var(--glow);text-align:center;transition:transform .15s}
+.action-btn:hover{transform:translateY(-1px)}
+.secondary-btn{all:unset;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--txt);padding:10px 14px;border-radius:13px;background:var(--field);border:1px solid var(--line);text-align:center}
+.secondary-btn:hover{border-color:var(--line-2)}
+.secondary-btn.sm{padding:7px 11px;font-size:12px;border-radius:11px}
+.secondary-btn.danger{color:var(--crit);border-color:var(--crit);background:var(--crit-soft)}
+.action-btn:focus-visible,.secondary-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.action-btn:disabled,.secondary-btn:disabled{opacity:.45;filter:saturate(.4);cursor:default}
+.status{font-size:12.5px;color:var(--good);font-variant-numeric:tabular-nums;margin-top:10px}
+.status:empty{display:none}
+
+details.panel>summary{list-style:none;cursor:pointer}
+details.panel>summary::-webkit-details-marker{display:none}
+details.panel>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:var(--r)}
+.chev{width:7px;height:7px;border-right:2px solid var(--txt-3);border-bottom:2px solid var(--txt-3);transform:rotate(-45deg);transition:transform .2s;flex:none}
+details[open]>summary .chev{transform:rotate(45deg)}
+.tips ol{margin:0;padding:12px 18px 16px 34px;font-size:13px;color:var(--txt-2)}
+.tips li{margin:5px 0;max-width:70ch}
+
+.roomnav{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.roomnav #rnNext{justify-self:end} .roomnav #rnPrev{justify-self:start}
+
+.room>summary{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:13px 16px}
+.room[open]>summary{border-bottom:1px solid var(--line)}
+.ring{width:34px;height:34px;flex:none}
+.ring circle{fill:none;stroke-width:4}
+.ring .bg{stroke:var(--surface-2)} .ring .fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .3s}
+.ring text{font-size:9.5px;font-weight:700;fill:var(--txt);text-anchor:middle;dominant-baseline:central;font-family:var(--f)}
+.room .rn{font-size:15.5px;font-weight:700;line-height:1.2;letter-spacing:-.01em}
+.room .rs{font-size:11.5px;color:var(--txt-3)}
+.pill{display:inline-block;font-size:11px;font-weight:560;padding:3px 9px;border-radius:999px;white-space:nowrap;background:var(--surface-2);color:var(--txt-2)}
+.p-good{background:var(--good-soft);color:var(--good)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-crit{background:var(--crit-soft);color:var(--crit)} .p-acc{background:var(--accent-soft);color:var(--accent-ink)}
+.rbody{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.rstats{display:flex;flex-wrap:wrap;gap:6px}
+.grp{background:var(--surface-2);border-radius:var(--r-card);padding:12px}
+.grp-t{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--txt-3);margin:0 0 10px;display:flex;justify-content:space-between;gap:8px}
+.grp-t em{font-style:normal;text-transform:none;letter-spacing:0;font-weight:600}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 10px}
+.cell{display:flex;flex-direction:column;gap:5px;min-width:0}
+.cell label{font-size:11.5px;font-weight:600;color:var(--txt-3);line-height:1.25;min-height:2.5em;display:flex;align-items:flex-end}
+.cell input{height:44px;border-radius:var(--r-sm);background:var(--field);border:1px solid var(--line);color:var(--txt);padding:0 12px;font-family:var(--f);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;width:100%;outline:none}
+.cell input::placeholder{color:var(--txt-3);font-weight:400;font-size:14px}
+.cell input:hover{border-color:var(--line-2)}
+.cell input:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.cell.on input{border-color:var(--accent)}
+.cell .meta{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11px;color:var(--txt-3);min-height:18px;font-variant-numeric:tabular-nums}
+.delta{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;font-variant-numeric:tabular-nums}
+.delta:empty{display:none}
+.delta.ok{background:var(--good-soft);color:var(--good)} .delta.warn{background:var(--warn-soft);color:var(--warn)} .delta.bad{background:var(--crit-soft);color:var(--crit)}
+.calc{font-size:11.5px;color:var(--txt-3);margin-top:10px}
+.calc:empty{display:none}
+.calc b{color:var(--txt);font-variant-numeric:tabular-nums}
+.calc .ok{color:var(--good)} .calc .warn{color:var(--warn)} .calc .bad{color:var(--crit)}
+.chains{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.chain{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:var(--surface-solid);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px}
+.chain .cn{font-size:11.5px;font-weight:600;color:var(--txt-3)}
+.chain .cf{grid-column:1;font-size:13px;font-variant-numeric:tabular-nums;color:var(--txt)}
+.chain .cf i{font-style:normal;color:var(--txt-3)}
+.chain .pill{grid-row:1 / span 2;grid-column:2}
+.item{background:var(--surface-solid);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:8px}
+.ihead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:8px}
+.tag{font-size:10px;font-weight:660;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:7px;background:var(--accent-soft);color:var(--accent-ink)}
+.tag.pt{background:var(--good-soft);color:var(--good)}
+.iname{font-weight:600;font-size:13.5px}
+input.iname{flex:1;min-width:120px;height:36px;border:1px solid var(--line);background:var(--field);color:var(--txt);padding:0 10px;border-radius:10px;font-family:var(--f);font-size:14px}
+input.iname:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.adds{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+textarea{width:100%;min-height:76px;font-family:var(--f);font-size:14px;padding:10px 12px;border:1px solid var(--line);background:var(--field);color:var(--txt);resize:vertical;border-radius:var(--r-sm);outline:none}
+textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.build{font-size:11px;color:var(--txt-3);text-align:center;margin-top:20px;font-variant-numeric:tabular-nums}
+
+/* нижняя панель ввода и вкладки */
+.tabbar{display:none}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--surface-solid);border-top:1px solid var(--line);border-radius:22px 22px 0 0;box-shadow:0 -14px 36px rgba(0,0,0,.2);padding-top:10px;padding-bottom:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet::before{content:"";display:block;width:40px;height:4px;border-radius:9px;background:var(--line-2);margin:0 auto 8px}
+.sh-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.sh-room{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--txt-3)}
+.sh-lbl{font-weight:700;font-size:18px;line-height:1.2;letter-spacing:-.01em;margin-top:2px}
+.sh-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;margin:12px 0 8px}
+.sh-dz{font-size:12px;color:var(--txt-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sh-dz b{color:var(--txt)}
+#shIn{width:100%;height:52px;font-family:var(--f);font-size:24px;font-weight:700;padding:0 14px;border:1px solid var(--accent);box-shadow:0 0 0 4px var(--accent-soft);background:var(--field);color:var(--txt);text-align:right;border-radius:14px;outline:none;font-variant-numeric:tabular-nums}
+#shDl{font-size:12px;padding:3px 9px}
+.sh-chain{font-size:12px;color:var(--txt-2);margin-bottom:10px;font-variant-numeric:tabular-nums}
+.sh-chain:empty{display:none}
+.sh-chain b{color:var(--txt)}
+.sh-chain .ok{color:var(--good)} .sh-chain .warn{color:var(--warn)} .sh-chain .bad{color:var(--crit)}
+.sh-nav{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.sh-pos{font-size:12px;color:var(--txt-3);font-variant-numeric:tabular-nums}
+
+@media (max-width:980px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .planbox{position:static}
+  .wrap{padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
+  .topbar{top:calc(env(safe-area-inset-top,0px) + 8px)}
+  .save span:last-child{display:none}
+  h1{font-size:21px}
+  .head{margin-top:16px}
+  .subtitle{display:none}
+  .tabbar{display:grid;position:fixed;left:0;right:0;bottom:0;z-index:40;grid-template-columns:repeat(3,1fr);background:var(--surface);-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+  .tabbar button{all:unset;cursor:pointer;text-align:center;padding:14px 0 12px;font-weight:700;font-size:14px;color:var(--txt-3)}
+  .tabbar button[aria-selected="true"]{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:420px){.fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<style>[hidden]{display:none!important}body{margin:0}:root{padding-top:env(safe-area-inset-top,0px)}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10l7-6 7 6v11"/><path d="M9 21v-6h6v6"/></svg></span>
+      <span><b>Приёмка квартиры</b><small>Тип 13 · 3 комнаты</small></span>
+    </div>
+    <div class="tb-right">
+      <span class="save" id="status"><span class="dot"></span><span>Подключаю хранилище…</span></span>
+      <button type="button" class="iconbtn" id="themeBtn" aria-label="Сменить тему" title="Сменить тему">
+        <svg class="ic-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="head"><h1>Обмерный план · Тип 13</h1><span class="version">67,19 м² по проекту</span></div>
+  <p class="subtitle">Эскиз в масштабе, фактические замеры и проверка цепочек размеров. Всё в миллиметрах.</p>
+  <nav class="chips" id="chips" aria-label="Помещения"></nav>
+
+  <div class="grid">
+    <section class="panel planbox" id="vPlan" aria-label="План квартиры">
+      <div class="planbar">
+        <div><div class="h2">План</div><div class="ttl" id="planTitle">Вся квартира</div></div>
+        <div class="seg" role="group" aria-label="Масштаб">
+          <button type="button" id="zOut" aria-label="Уменьшить" title="Уменьшить">−</button>
+          <button type="button" id="zFit" title="Вписать в окно">Вписать</button>
+          <button type="button" id="zIn" aria-label="Увеличить" title="Увеличить">+</button>
+        </div>
+      </div>
+      <div class="planscroll" id="planscroll" title="Двигать — перетаскиванием, масштаб — колесом или щипком">
+        <svg id="plan" viewBox="10 20 1880 2070" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Обмерный план квартиры с осями и размерами"></svg>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--axis)"></i>Оси и шаг несущих</span>
+        <span><i style="background:var(--txt-3)"></i>Эскиз</span>
+        <span><i style="background:var(--accent)"></i>Проёмы и точки</span>
+        <span><i style="background:var(--good)"></i>±20 мм</span>
+        <span><i style="background:var(--warn)"></i>±21–50</span>
+        <span><i style="background:var(--crit)"></i>&gt; 50</span>
+      </div>
+    </section>
+
+    <section class="col" aria-label="Журнал замеров">
+      <div class="panel" id="vSum">
+        <div class="phead"><span class="h2">Итоги</span></div>
+        <div class="pbody">
+          <div class="kpis">
+            <div class="kpi"><div class="k">Заполнено</div><div class="v" id="kFilled">0</div></div>
+            <div class="kpi"><div class="k">Помещений</div><div class="v" id="kRooms">0 / 8</div></div>
+            <div class="kpi"><div class="k">Δ &gt; 50 мм</div><div class="v" id="kBad">0</div></div>
+            <div class="kpi"><div class="k">Замечаний</div><div class="v" id="kGeo">—</div></div>
+          </div>
+          <div class="bar" aria-hidden="true"><div id="pbar"></div></div>
+          <div class="tablewrap">
+            <table class="areas" aria-label="Площади">
+              <thead><tr><th>Помещение</th><th>Проект</th><th>Эскиз</th><th>Замер, м²</th></tr></thead>
+              <tbody id="areaRows"></tbody>
+              <tfoot><tr><td>Итого без прихожей и лоджии</td><td id="tProj"></td><td id="tSk"></td><td id="tMe"></td></tr></tfoot>
+            </table>
+          </div>
+          <div class="note" id="floorNote"></div>
+          <div class="toolbar">
+            <button type="button" class="action-btn" id="bCopy">Скопировать таблицу</button>
+            <button type="button" class="secondary-btn" id="bBackup" hidden>Сохранить файл с замерами</button>
+            <label class="secondary-btn" for="fImport">Загрузить из файла</label><input type="file" id="fImport" accept=".json,application/json" hidden>
+            <button type="button" class="secondary-btn" id="bCsv" hidden>Скачать CSV</button>
+          </div>
+          <div class="status" id="toast" role="status"></div>
+        </div>
+      </div>
+
+      <details class="panel tips" id="vTips">
+        <summary class="phead"><span class="chev"></span><span class="h2">Как мерить</span></summary>
+        <ol>
+          <li>Всё в чистоте: от поверхности до поверхности. Не до оси, не до середины стены и не через стену.</li>
+          <li>У каждой стены — цепочка «угол → простенок → проём → простенок → угол» и общий размер. Приложение само сверит сумму.</li>
+          <li>Стены меряйте у пола и под потолком, записывайте меньшее, разницу — в заметки.</li>
+          <li>Диагонали: до 10 мм нормально, больше 20 мм заметно при плитке и ламинате.</li>
+          <li>Пол: лазерный уровень ставится один раз на всю квартиру, меряйте от линии вниз до пола. Больше число — ниже пол.</li>
+          <li>Инженерные точки привязывайте к левой и верхней стене комнаты так, как она нарисована на плане.</li>
+          <li>Трещины, сколы, мокрые пятна — в заметки и на фото, для акта замечаний.</li>
+        </ol>
+      </details>
+
+      <div class="roomnav" id="roomNav" hidden>
+        <button type="button" class="secondary-btn sm" id="rnPrev">‹</button>
+        <button type="button" class="secondary-btn sm" id="rnAll">Вся квартира</button>
+        <button type="button" class="secondary-btn sm" id="rnNext">›</button>
+      </div>
+      <div id="rooms" class="col"></div>
+    </section>
+  </div>
+  <div class="build">BUILD 2026-10-25.01</div>
+</div>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-label="Ввод размера">
+  <div class="sh-top">
+    <div><div class="sh-room" id="shRoom"></div><div class="sh-lbl" id="shLbl"></div></div>
+    <button type="button" class="iconbtn" id="shClose" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="sh-row">
+    <div class="sh-dz">эскиз <b id="shDz"></b></div>
+    <input id="shIn" type="number" inputmode="numeric" min="0" step="1" placeholder="мм" autocomplete="off" aria-label="Фактический размер, мм">
+    <span class="delta" id="shDl"></span>
+  </div>
+  <div class="sh-chain" id="shChain"></div>
+  <div class="sh-nav">
+    <button type="button" class="secondary-btn" id="shPrev">‹ Назад</button>
+    <span class="sh-pos" id="shPos"></span>
+    <button type="button" class="action-btn" id="shNext">Далее ›</button>
+  </div>
+</div>
+
+<nav class="tabbar" id="tabbar" aria-label="Разделы">
+  <button type="button" data-tab="plan" aria-selected="true">План</button>
+  <button type="button" data-tab="rooms" aria-selected="false">Замеры</button>
+  <button type="button" data-tab="sum" aria-selected="false">Итоги</button>
+</nav>
+
+<script>
+(function(){
+"use strict";
+const TGA=(window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.initData)?window.Telegram.WebApp:null;
+const STANDALONE=!(window.claude&&window.claude.use);
+const mq=matchMedia('(max-width:980px)');
+const RM=matchMedia('(prefers-reduced-motion: reduce)');
+const K=7.114;
+
+/* ---------- Тема ---------- */
+function isDark(){const t=document.documentElement.getAttribute('data-theme');if(t)return t==='dark';return matchMedia('(prefers-color-scheme: dark)').matches;}
+document.getElementById('themeBtn').addEventListener('click',()=>{const n=isDark()?'light':'dark';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('priemka-theme',n);}catch(e){}});
+
+/* ---------- Геометрия ---------- */
+const WALLS=[
+ [1108,180,1136,780],[1136,180,1292,230],[1510,180,1617,230],[1585,230,1617,1637],
+ [355,662,1195,690],[1322,662,1617,690],
+ [397,690,430,750],[643,690,669,780],
+ [1330,690,1347,800,1],[1330,900,1347,990,1],[1259,990,1585,1005,1],
+ [669,914,776,932,1],[962,914,1108,932,1],[643,914,669,1800],[1108,914,1136,1590],
+ [140,887,166,1800],[397,887,430,920],[166,920,472,946,1],[455,1038,472,1128,1],[166,1128,522,1144,1],
+ [140,1590,279,1637],[478,1590,764,1637],[1017,1590,1271,1637],[1475,1590,1617,1637],
+ [166,1637,215,1800]
+];
+const WINDOWS=[[279,1590,478,1637,'kit.w1_W'],[764,1590,1017,1637,'r14.w1_W'],[1271,1590,1475,1637,'r13.w1_W'],[1292,180,1510,230,'r10.w1_W'],[215,1792,643,1808,'bal.w1_W']];
+const DOORS=[[1195,676,1322,676,'r10.d1_W'],[1338,800,1338,900,'bath.d1_W'],[1136,997,1259,997,'r13.d1_W'],[776,923,962,923,'r14.d1_W'],[463,946,463,1038,'wc.d1_W'],[522,1136,643,1136,'kit.d1_W'],[153,700,153,880,'hall.d1_W']];
+const AX_X=[[152,'6с'],[658,'7с'],[1121,'8с'],[1628,'9с']];
+const AX_Y=[[214,'Гс'],[679,'Вс'],[1607,'Бс']];
+const AX_STEP_X=[[152,658,3600],[658,1121,3300],[1121,1628,3600]];
+const AX_STEP_Y=[[214,679,3300],[679,1607,6600]];
+
+const TYPES={win:{n:'Окно',k:'open'},door:{n:'Дверь',k:'open'},riser:{n:'Стояк ВК',k:'pt',s:'С'},vent:{n:'Вентиляция',k:'pt',s:'В'},heat:{n:'Отопление',k:'pt',s:'О'},elec:{n:'Электрощит',k:'pt',s:'Щ'},low:{n:'Слаботочка',k:'pt',s:'Сл'},beam:{n:'Балка',k:'pt',s:'Б'},shaft:{n:'Шахта',k:'pt',s:'Ш'},other:{n:'Точка',k:'pt',s:'•'}};
+const XY=[['X','От левой стены'],['Y','От верхней стены']];
+const FL={
+ win:[['W','Ширина'],['H','Высота'],['S','Подоконник от пола'],['Top','Верх проёма от пола'],['D','Глубина откоса'],['P','От угла до проёма']],
+ door:[['W','Ширина'],['H','Высота'],['D','Толщина стены в проёме'],['Th','Порог'],['P','От угла до проёма']],
+ riser:XY.concat([['Dm','Диаметр трубы']]),
+ vent:XY.concat([['Z','Высота от пола'],['Dm','Размер решётки']]),
+ heat:XY.concat([['Z','Высота выводов от пола'],['Dm','Длина радиатора']]),
+ elec:XY.concat([['Z','Высота от пола'],['Dm','Ширина щита']]),
+ low:XY.concat([['Z','Высота от пола']]),
+ beam:XY.concat([['Z','Опускается от потолка'],['Dm','Ширина']]),
+ shaft:XY.concat([['Dm','Ширина'],['Dd','Глубина']]),
+ other:XY.concat([['Z','Высота от пола'],['Dm','Размер']])
+};
+
+/* dims: [ключ, подпись, эскиз, 'h'|'v', линия, от, до, оценка по чертежу, выносные до]
+   chains: части стены (ключи этой комнаты или 'комната.ключ') должны в сумме дать общий размер t */
+const ROOMS=[
+ {id:'hall',tag:'П',short:'Прихожая',name:'Прихожая 12,97',hint:'коридор вдоль верхней стены',proj:12.97,at:[880,848],rect:[166,690,1330,914],area:null,diag:false,
+  dims:[['Lt','Длина коридора: вход → ванная',8370,'h',800,153,1330,1,null],['Wh','Ширина у санузла',1640,'v',620,690,920,1,null],['Wh2','Ширина у ванной',2130,'v',1240,690,990,1,null],
+        ['p1','Выступ пилона у входа',420,'v',318,690,750,0,397],['a','Между пилонами слева',1519,'h',764,430,643,0,[750,null]],
+        ['b','Между пилонами справа',3117,'h',764,669,1108,0,null],['p2','Пилон у комнаты 10,11',628,'v',1175,690,780,0,1136],
+        ['c','Стена ванной до двери',773,'v',1295,690,800,0,1330],['d','Стена ванной после двери',648,'v',1295,900,990,0,1330]],
+  chains:[],
+  items:[{id:'d1',type:'door',name:'Входная дверь',design:null,dim:null},{id:'e1',type:'elec',name:'Электрощит'}]},
+ {id:'kit',tag:'К',short:'Кухня',name:'Кухня 10,97',hint:'выход на лоджию',proj:10.97,at:[404,1330],rect:[166,1144,643,1590],area:['W','L'],diag:true,
+  dims:[['W','Ширина у окна',3399,'h',1900,166,643,0,1800],['L','Глубина',3165,'v',97,1144,1590,0,140],
+        ['N','Стена к санузлу',2537,'h',1203,166,522,0,1144],
+        ['pL','Простенок у окна слева',804,'h',1562,166,279,1,1590],['pR','Простенок у окна справа',1174,'h',1562,478,643,1,1590]],
+  chains:[{n:'Стена с окном',t:'W',p:['pL','w1_W','pR']},{n:'Стена с дверью',t:'W',p:['N','d1_W']}],
+  items:[{id:'w1',type:'win',name:'Балконный блок (окно + дверь)',design:1415,dim:['h',1562,279,478,1590]},
+         {id:'d1',type:'door',name:'Дверь из прихожей',design:860,dim:['h',1203,522,643,1144]},
+         {id:'v1',type:'vent',name:'Вентиляция'},{id:'r1',type:'riser',name:'Стояк ВК (мойка)'},{id:'h1',type:'heat',name:'Отопление'}]},
+ {id:'bal',tag:'Л',short:'Лоджия',name:'Лоджия 3,22',hint:'с кухни, остеклённая',proj:3.22,at:[430,1712],rect:[215,1637,643,1800],area:['W','L'],diag:true,loggia:true,
+  dims:[['W','Ширина',3048,'h',1847,215,643,0,1800],['L','Глубина',1068,'v',97,1637,1800,0,140]],
+  extra:[['par','Высота парапета']],chains:[],
+  items:[{id:'w1',type:'win',name:'Остекление',design:3048,dim:null}]},
+ {id:'wc',tag:'С',short:'Санузел',name:'Санузел 1,71',hint:'над кухней',proj:1.71,at:[268,1052],rect:[166,946,455,1128],area:['W','L'],diag:true,
+  dims:[['W','Ширина',2055,'h',862,166,455,0,920],['L','Длина',1287,'v',412,946,1128,0,null]],chains:[],
+  items:[{id:'d1',type:'door',name:'Дверь',design:650,dim:['v',505,946,1038,472]},{id:'r1',type:'riser',name:'Стояк канализации'},{id:'v1',type:'vent',name:'Вентиляция'}]},
+ {id:'bath',tag:'В',short:'Ванная',name:'Ванная 3,04',hint:'с шахтой у правой стены',proj:3.04,at:[1440,868],rect:[1347,690,1585,990],area:['W','L'],diag:true,
+  dims:[['W','Ширина',1692,'h',745,1347,1585,0,null],['L','Длина',2125,'v',1690,690,990,0,1617]],
+  chains:[{n:'Стена к коридору',t:'L',p:['hall.c','d1_W','hall.d']}],
+  items:[{id:'d1',type:'door',name:'Дверь',design:700,dim:['v',1295,800,900,1330]},
+         {id:'s1',type:'shaft',name:'Шахта у правой стены',pd:{X:1387,Y:1423,Dm:306,Dd:711}},
+         {id:'r1',type:'riser',name:'Стояк ВК'},{id:'v1',type:'vent',name:'Вентиляция'}]},
+ {id:'r10',tag:'1',short:'Комн. 10,11',name:'Комната 10,11',hint:'верхняя, между осями Вс–Гс',proj:10.11,at:[1360,360],rect:[1136,230,1585,662],area:['W','L'],diag:true,
+  dims:[['W','Ширина в чистоте',3194,'h',540,1136,1585,1,null],['L','Длина в чистоте',3065,'v',1070,230,662,0,1108],
+        ['pL','Простенок у окна слева',1112,'h',118,1136,1292,0,180],['pR','Простенок у окна справа',534,'h',118,1510,1585,1,180],
+        ['dLw','От левой стены до двери',420,'h',628,1136,1195,1,662],['dW','От двери до правой стены',1878,'h',628,1322,1585,0,662]],
+  chains:[{n:'Стена с окном',t:'W',p:['pL','w1_W','pR']},{n:'Стена с дверью',t:'W',p:['dLw','d1_W','dW']}],
+  items:[{id:'w1',type:'win',name:'Окно',design:1548,dim:['h',118,1292,1510,180]},
+         {id:'d1',type:'door',name:'Дверь из прихожей',design:896,dim:['h',628,1195,1322,662]},{id:'h1',type:'heat',name:'Отопление'}]},
+ {id:'r14',tag:'2',short:'Комн. 14,85',name:'Комната 14,85',hint:'средняя, окно во двор',proj:14.85,at:[888,1180],rect:[669,932,1108,1590],area:['W','L'],diag:true,
+  dims:[['W','Ширина в чистоте',3117,'h',1505,669,1108,0,null],['L','Длина в чистоте',4680,'v',1060,932,1590,1,null],
+        ['pL','Простенок у окна слева',673,'h',1690,669,764,0,1637],['pR','Простенок у окна справа',644,'h',1690,1017,1108,0,1637],
+        ['dL','Стена до двери слева',759,'h',885,669,776,0,914],['dR','Стена после двери справа',1037,'h',885,962,1108,0,914]],
+  chains:[{n:'Стена с окном',t:'W',p:['pL','w1_W','pR']},{n:'Стена с дверью',t:'W',p:['dL','d1_W','dR']}],
+  items:[{id:'w1',type:'win',name:'Окно',design:1800,dim:['h',1690,764,1017,1637]},
+         {id:'d1',type:'door',name:'Дверь из прихожей',design:1320,dim:['h',885,776,962,914]},{id:'h1',type:'heat',name:'Отопление'}]},
+ {id:'r13',tag:'3',short:'Комн. 13,54',name:'Комната 13,54',hint:'правая, у оси 9с',proj:13.54,at:[1360,1250],rect:[1136,1005,1585,1590],area:['W','L'],diag:true,
+  dims:[['W','Ширина в чистоте',3193,'h',1747,1136,1585,0,1637],['L','Длина в чистоте',4154,'v',1690,1005,1590,0,1617],
+        ['pL','Простенок у окна слева',959,'h',1690,1136,1271,0,1637],['pR','Простенок у окна справа',787,'h',1690,1475,1585,0,1637],
+        ['tw','Стена к ванной',2318,'h',1062,1259,1585,0,1005]],
+  chains:[{n:'Стена с окном',t:'W',p:['pL','w1_W','pR']},{n:'Стена с дверью',t:'W',p:['d1_W','tw']}],
+  items:[{id:'w1',type:'win',name:'Окно',design:1447,dim:['h',1690,1271,1475,1637]},
+         {id:'d1',type:'door',name:'Дверь из прихожей',design:875,dim:['h',1062,1136,1259,1005]},{id:'h1',type:'heat',name:'Отопление'}]}
+];
+const HEIGHTS=[['h1','Угол 1'],['h2','Угол 2'],['h3','Угол 3'],['h4','Угол 4'],['h5','Центр']];
+const FLOOR=[['fl1','У входа'],['fl2','Центр'],['fl3','Дальний угол']];
+const WALLQ=[['wv','Отклонение от вертикали, макс.'],['wf','Неровность под правилом 2 м']];
+
+/* ---------- Состояние ---------- */
+const S={vals:{},notes:{},custom:{},pending:{},timers:{},writing:{},db:null,tg:false,mode:'init',dl:null,active:null,view:'all'};
+ROOMS.forEach(r=>{S.vals[r.id]={};S.notes[r.id]='';S.custom[r.id]=[];});
+const roomById=id=>ROOMS.find(r=>r.id===id);
+const itemsOf=r=>r.items.concat(S.custom[r.id]);
+const dimCenter=(o,c,a,b)=>o==='h'?[(a+b)/2,c]:[c,(a+b)/2];
+const itemName=o=>o.name||('Новая точка: '+TYPES[o.type].n.toLowerCase());
+let shKey=null,lastSig='',tab='plan';
+let FOLDS={};try{FOLDS=JSON.parse(localStorage.getItem('priemka-folds-v1')||'{}')||{};}catch(e){FOLDS={};}
+function saveFolds(){try{localStorage.setItem('priemka-folds-v1',JSON.stringify(FOLDS));}catch(e){}}
+
+function fields(r){
+  const f=[];
+  r.dims.forEach(d=>f.push({k:d[0],label:d[1],full:d[1],design:d[2],approx:!!d[7],grp:'dims',pos:dimCenter(d[3],d[4],d[5],d[6])}));
+  itemsOf(r).forEach(o=>{
+    const t=TYPES[o.type],nm=itemName(o);
+    const pos=o.dim?dimCenter(o.dim[0],o.dim[1],o.dim[2],o.dim[3]):null;
+    FL[o.type].forEach(([k,l])=>{
+      let design=null;if(k==='W'&&t.k==='open'&&o.design!=null)design=o.design;if(o.pd&&o.pd[k]!=null)design=o.pd[k];
+      f.push({k:o.id+'_'+k,label:l,full:nm+': '+l.toLowerCase(),design,approx:true,grp:t.k,oid:o.id,pos});
+    });
+  });
+  if(r.diag){const W=r.dims.find(d=>d[0]==='W')[2],L=r.dims.find(d=>d[0]==='L')[2];const dd=Math.round(Math.hypot(W,L));
+    ['d1','d2'].forEach((k,i)=>f.push({k,label:'Диагональ '+(i+1),full:'Диагональ '+(i+1),design:dd,approx:true,grp:'diag'}));}
+  HEIGHTS.forEach(h=>f.push({k:h[0],label:h[1],full:'Высота потолка, '+h[1].toLowerCase(),design:null,grp:'h'}));
+  FLOOR.forEach(h=>f.push({k:h[0],label:h[1],full:'Пол от лазерной линии, '+h[1].toLowerCase(),design:null,grp:'floor'}));
+  WALLQ.concat(r.extra||[]).forEach(h=>f.push({k:h[0],label:h[1],full:h[1],design:null,grp:'walls'}));
+  return f;
+}
+let FIELDS={},ORDER=[],TOTAL=0;
+function recompute(){FIELDS={};ORDER=[];ROOMS.forEach(r=>{FIELDS[r.id]=fields(r);FIELDS[r.id].forEach(f=>ORDER.push(r.id+'.'+f.k));});TOTAL=ORDER.length;}
+recompute();
+
+const num=v=>(typeof v==='number'&&isFinite(v))?v:null;
+const val=(rid,k)=>num(S.vals[rid][k]);
+const cls=delta=>{const a=Math.abs(delta);return a<=20?'ok':a<=50?'warn':'bad';};
+const pcls=c=>c==='ok'?'p-good':c==='warn'?'p-warn':c==='bad'?'p-crit':'';
+const fmtA=n=>n==null?'—':n.toFixed(2).replace('.',',');
+const sign=n=>(n>0?'+':n<0?'−':'±')+Math.abs(n);
+const rank={ok:0,warn:1,bad:2};
+function fieldOf(key){const i=key.indexOf('.');const rid=key.slice(0,i),k=key.slice(i+1);return {r:roomById(rid),f:(FIELDS[rid]||[]).find(x=>x.k===k),rid,k};}
+function areaOf(r,measured){
+  if(!r.area)return null;const [a,b]=r.area;const fa=FIELDS[r.id].find(f=>f.k===a),fb=FIELDS[r.id].find(f=>f.k===b);
+  const va=measured?val(r.id,a):fa.design,vb=measured?val(r.id,b):fb.design;return (va==null||vb==null)?null:va*vb/1e6;
+}
+function spread(rid,keys){const v=keys.map(k=>val(rid,k)).filter(x=>x!=null);if(v.length<2)return null;const mn=Math.min(...v),mx=Math.max(...v);return {mn,mx,d:mx-mn};}
+const lvl=(d,a,b)=>d<=a?'ok':d<=b?'warn':'bad';
+function geo(r){
+  const out=[];const d1=val(r.id,'d1'),d2=val(r.id,'d2');
+  if(d1!=null&&d2!=null){const d=Math.abs(d1-d2);out.push({t:'diag',d,c:lvl(d,10,20)});}
+  const h=spread(r.id,HEIGHTS.map(x=>x[0]));if(h)out.push({t:'h',d:h.d,min:h.mn,max:h.mx,c:lvl(h.d,10,20)});
+  const fl=spread(r.id,FLOOR.map(x=>x[0]));if(fl)out.push({t:'floor',d:fl.d,c:lvl(fl.d,10,20)});
+  const wv=val(r.id,'wv');if(wv!=null)out.push({t:'wv',d:wv,c:lvl(wv,10,20)});
+  const wf=val(r.id,'wf');if(wf!=null)out.push({t:'wf',d:wf,c:lvl(wf,5,10)});
+  return out;
+}
+const GEO_NAME={diag:'Δ диагоналей',h:'Потолок, перепад',floor:'Пол, перепад',wv:'Вертикаль',wf:'Неровность'};
+/* цепочки */
+function keyRef(r,k){return k.indexOf('.')>0?k:r.id+'.'+k;}
+function cval(ref){const {rid,k,f}=fieldOf(ref);return {m:val(rid,k),d:f?f.design:null,label:f?f.label:k};}
+function chainInfo(r,c){
+  const parts=c.p.map(k=>cval(keyRef(r,k))),tot=cval(keyRef(r,c.t));
+  const allM=parts.every(p=>p.m!=null)&&tot.m!=null;
+  const sum=parts.reduce((s,p)=>s+(p.m!=null?p.m:(p.d||0)),0);
+  const diff=allM?tot.m-sum:null;
+  return {parts,tot,allM,sum,diff,c:allM?lvl(Math.abs(diff),10,20):null,filled:parts.filter(p=>p.m!=null).length+(tot.m!=null?1:0),n:parts.length+1};
+}
+function chainHTML(ci){
+  const v=p=>p.m!=null?'<b>'+p.m+'</b>':'<i>'+(p.d!=null?'≈'+p.d:'?')+'</i>';
+  return ci.parts.map(v).join(' + ')+' = '+ci.sum+' · общий '+v(ci.tot);
+}
+function ptPos(r,o){const gx=v=>val(r.id,o.id+'_'+v)!=null?val(r.id,o.id+'_'+v):(o.pd&&o.pd[v]!=null?o.pd[v]:null);
+  const X=gx('X'),Y=gx('Y');if(X==null||Y==null)return null;return [r.rect[0]+X/K,r.rect[1]+Y/K];}
+
+/* ---------- План ---------- */
+const NS='http://www.w3.org/2000/svg';
+const svg=document.getElementById('plan');
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function ticks(g,o,c,a,b,cl){if(o==='h')[a,b].forEach(x=>el('line',{x1:x-8,y1:c+8,x2:x+8,y2:c-8,class:cl},g));else [a,b].forEach(y=>el('line',{x1:c-8,y1:y+8,x2:c+8,y2:y-8,class:cl},g));}
+function extLines(g,o,c,a,b,e){
+  if(e==null)return;
+  [a,b].forEach((p,i)=>{const t=Array.isArray(e)?e[i]:e;if(t==null||Math.abs(t-c)<4)return;const over=t>c?-12:12;
+    if(o==='h')el('line',{x1:p,y1:c+over,x2:p,y2:t,class:'ext'},g);else el('line',{x1:c+over,y1:p,x2:t,y2:p,class:'ext'},g);});
+}
+function drawStatic(){
+  svg.innerHTML='';
+  const defs=el('defs',{},svg);
+  const pat=el('pattern',{id:'hatch',patternUnits:'userSpaceOnUse',width:9,height:9,patternTransform:'rotate(45)'},defs);
+  el('rect',{width:9,height:9,style:'fill:var(--plan)'},pat);
+  el('line',{x1:0,y1:0,x2:0,y2:9,style:'stroke:var(--hatch);stroke-width:1.6'},pat);
+  el('g',{id:'gHi'},svg);
+  const ax=el('g',{},svg);
+  AX_X.forEach(([x])=>el('line',{x1:x,y1:140,x2:x,y2:2018,class:'axis'},ax));
+  AX_Y.forEach(([y])=>el('line',{x1:110,y1:y,x2:1826,y2:y,class:'axis'},ax));
+  const ad=el('g',{class:'adim'},svg);const yb=1974,xr=1772;
+  AX_STEP_X.forEach(([a,b,t])=>{el('line',{x1:a,y1:yb,x2:b,y2:yb,class:'ln'},ad);ticks(ad,'h',yb,a,b,'tk');el('text',{x:(a+b)/2,y:yb-10,'text-anchor':'middle'},ad).textContent=t;});
+  el('line',{x1:152,y1:yb+38,x2:1628,y2:yb+38,class:'ln'},ad);ticks(ad,'h',yb+38,152,1628,'tk');
+  el('text',{x:890,y:yb+30,'text-anchor':'middle'},ad).textContent='10500';
+  AX_STEP_Y.forEach(([a,b,t])=>{el('line',{x1:xr,y1:a,x2:xr,y2:b,class:'ln'},ad);ticks(ad,'v',xr,a,b,'tk');const cx=xr-10,cy=(a+b)/2;el('text',{x:cx,y:cy,'text-anchor':'middle',transform:'rotate(-90 '+cx+' '+cy+')'},ad).textContent=t;});
+  AX_X.forEach(([x,n])=>{const g=el('g',{class:'axbub'},ax);el('circle',{cx:x,cy:2052,r:27},g);el('text',{x,y:2053},g).textContent=n;});
+  AX_Y.forEach(([y,n])=>{const g=el('g',{class:'axbub'},ax);el('circle',{cx:1852,cy:y,r:27},g);el('text',{x:1852,y:y+1},g).textContent=n;});
+  const wg=el('g',{},svg);
+  WALLS.forEach(w=>el('rect',{x:w[0],y:w[1],width:w[2]-w[0],height:w[3]-w[1],class:'wall'+(w[4]?' thin':'')},wg));
+  el('text',{x:28,y:800,class:'entry'},wg).textContent='вход →';
+  el('g',{id:'gOpen'},svg);el('g',{id:'gDims'},svg);el('g',{id:'gPts'},svg);el('g',{id:'gLabels'},svg);
+}
+const curCls=rid=>(S.view===rid?' cur':'');
+function drawDim(gd,rid,key,design,m,o,c,a,b,e,label,isOp){
+  const g=el('g',{class:'dim'+(isOp?' op':'')+(S.active===key?' on':'')+curCls(rid),'data-key':key,'data-room':rid,tabindex:0,role:'button','aria-label':label},gd);
+  extLines(g,o,c,a,b,e);
+  if(o==='h'){el('line',{x1:a,y1:c,x2:b,y2:c,class:'hit'},g);el('line',{x1:a,y1:c,x2:b,y2:c,class:'ln'},g);}
+  else{el('line',{x1:c,y1:a,x2:c,y2:b,class:'hit'},g);el('line',{x1:c,y1:a,x2:c,y2:b,class:'ln'},g);}
+  ticks(g,o,c,a,b,'tk');
+  let t;
+  if(o==='h')t=el('text',{x:(a+b)/2,y:c-9,'text-anchor':'middle'},g);
+  else{const cx=c-9,cy=(a+b)/2;t=el('text',{x:cx,y:cy,'text-anchor':'middle',transform:'rotate(-90 '+cx+' '+cy+')'},g);}
+  if(m!=null){
+    const s=document.createElementNS(NS,'tspan');s.setAttribute('class','m '+(design==null?'na':cls(m-design)));s.textContent=String(m);t.appendChild(s);
+    if(design!=null){const d=document.createElementNS(NS,'tspan');d.setAttribute('class','d');d.textContent=' ('+design+')';t.appendChild(d);}
+  }else t.textContent=design==null?'?':(isOp?'≈':'')+design;
+}
+function drawDynamic(){
+  const gh=document.getElementById('gHi'),go=document.getElementById('gOpen'),gd=document.getElementById('gDims'),gp=document.getElementById('gPts'),gl=document.getElementById('gLabels');
+  gh.innerHTML='';go.innerHTML='';gd.innerHTML='';gp.innerHTML='';gl.innerHTML='';
+  svg.classList.toggle('solo',S.view!=='all');
+  if(S.view!=='all'){const r=roomById(S.view);el('rect',{x:r.rect[0],y:r.rect[1],width:r.rect[2]-r.rect[0],height:r.rect[3]-r.rect[1],class:'hi'},gh);}
+  WINDOWS.forEach(w=>{const rid=w[4].split('.')[0];const g=el('g',{class:'opn'+(S.active===w[4]?' on':'')+curCls(rid),'data-key':w[4],'data-room':rid},go);el('rect',{x:w[0],y:w[1],width:w[2]-w[0],height:w[3]-w[1]},g);const my=(w[1]+w[3])/2;el('line',{x1:w[0],y1:my,x2:w[2],y2:my,class:'g'},g);});
+  DOORS.forEach(d=>{const rid=d[4].split('.')[0];const g=el('g',{class:'opn'+(S.active===d[4]?' on':'')+curCls(rid),'data-key':d[4],'data-room':rid},go);el('line',{x1:d[0],y1:d[1],x2:d[2],y2:d[3],class:'hit'},g);el('line',{x1:d[0],y1:d[1],x2:d[2],y2:d[3],class:'door'},g);});
+  ROOMS.forEach(r=>{
+    r.dims.forEach(d=>drawDim(gd,r.id,r.id+'.'+d[0],d[2],val(r.id,d[0]),d[3],d[4],d[5],d[6],d[8],r.name+': '+d[1],false));
+    r.items.forEach(o=>{if(o.dim)drawDim(gd,r.id,r.id+'.'+o.id+'_W',o.design,val(r.id,o.id+'_W'),o.dim[0],o.dim[1],o.dim[2],o.dim[3],o.dim[4],r.name+': '+o.name+', ширина',true);});
+    itemsOf(r).forEach(o=>{
+      if(TYPES[o.type].k!=='pt')return;const p=ptPos(r,o);if(!p)return;const key=r.id+'.'+o.id+'_X';
+      const g=el('g',{class:'pt'+(S.active&&S.active.indexOf(r.id+'.'+o.id+'_')===0?' on':'')+curCls(r.id),'data-key':key,'data-room':r.id,tabindex:0,role:'button','aria-label':r.name+': '+itemName(o)},gp);
+      const dm=val(r.id,o.id+'_Dm')!=null?val(r.id,o.id+'_Dm'):(o.pd&&o.pd.Dm)||null,dd=val(r.id,o.id+'_Dd')!=null?val(r.id,o.id+'_Dd'):(o.pd&&o.pd.Dd)||null;
+      if(o.type==='shaft'&&dm&&dd){el('rect',{x:p[0],y:p[1],width:dm/K,height:dd/K,class:'mk o'},g);}
+      else if(o.type==='beam'){el('rect',{x:p[0]-30,y:p[1]-10,width:60,height:20,class:'mk o'},g);}
+      else if(o.type==='heat'){const w=dm?dm/K:60;el('rect',{x:p[0],y:p[1]-9,width:w,height:18,rx:4,class:'mk'},g);}
+      else{el('circle',{cx:p[0],cy:p[1],r:17,class:'mk'},g);el('text',{x:p[0],y:p[1]+1},g).textContent=TYPES[o.type].s;}
+    });
+    const g=el('g',{class:'rlabel'+curCls(r.id),'data-room':r.id},gl);
+    const [x,y]=r.at;el('text',{x,y,class:'n'},g).textContent=r.name;
+    const ma=areaOf(r,true),sa=areaOf(r,false);
+    if(r.area)el('text',{x,y:y+28,class:ma!=null?'am':'a'},g).textContent=ma!=null?('замер '+fmtA(ma)+' м²'):('эскиз '+fmtA(sa)+' м²');
+  });
+}
+
+/* ---------- Панели комнат ---------- */
+const roomsEl=document.getElementById('rooms');
+function mkCell(r,f){
+  const id='f-'+r.id+'-'+f.k;
+  const t=document.createElement('div');t.className='cell';t.dataset.key=r.id+'.'+f.k;
+  const lab=document.createElement('label');lab.htmlFor=id;lab.textContent=f.label;
+  const inp=document.createElement('input');inp.id=id;inp.type='number';inp.inputMode='numeric';inp.min='0';inp.step='1';inp.placeholder='мм';inp.autocomplete='off';inp.dataset.room=r.id;inp.dataset.k=f.k;
+  const meta=document.createElement('div');meta.className='meta';
+  const dz=document.createElement('span');dz.textContent=f.design==null?'':'эскиз '+(f.approx?'≈':'')+f.design;
+  const dl=document.createElement('span');dl.className='delta';dl.id='dl-'+r.id+'-'+f.k;
+  meta.append(dz,dl);t.append(lab,inp,meta);return t;
+}
+function grp(title,note,tip){const box=document.createElement('div');box.className='grp';const h=document.createElement('div');h.className='grp-t';if(tip)h.title=tip;const a=document.createElement('span');a.textContent=title;const b=document.createElement('em');b.textContent=note||'';h.append(a,b);box.appendChild(h);return box;}
+function cells(r,list){const g=document.createElement('div');g.className='fields';list.forEach(f=>g.appendChild(mkCell(r,f)));return g;}
+function calc(id){const c=document.createElement('div');c.className='calc';c.id=id;return c;}
+function itemBlock(r,o){
+  const box=document.createElement('div');box.className='item';
+  const hd=document.createElement('div');hd.className='ihead';
+  const ty=document.createElement('span');ty.className='tag'+(TYPES[o.type].k==='pt'?' pt':'');ty.textContent=TYPES[o.type].n;hd.appendChild(ty);
+  if(o.id.charAt(0)==='c'){
+    const ni=document.createElement('input');ni.className='iname';ni.type='text';ni.maxLength=80;ni.placeholder='Название, например «'+TYPES[o.type].n+' 2»';
+    ni.dataset.room=r.id;ni.dataset.oid=o.id;ni.id='on-'+r.id+'-'+o.id;ni.setAttribute('aria-label','Название');hd.appendChild(ni);
+    const del=document.createElement('button');del.type='button';del.className='secondary-btn sm';del.textContent='Удалить';del.dataset.del=o.id;del.dataset.room=r.id;hd.appendChild(del);
+  }else{const nm=document.createElement('span');nm.className='iname';nm.textContent=o.name;hd.appendChild(nm);}
+  box.appendChild(hd);box.appendChild(cells(r,FIELDS[r.id].filter(f=>f.oid===o.id)));return box;
+}
+function addBtns(r,types){const d=document.createElement('div');d.className='adds';types.forEach(t=>{const b=document.createElement('button');b.type='button';b.className='secondary-btn sm';b.textContent='+ '+TYPES[t].n;b.dataset.add=t;b.dataset.room=r.id;d.appendChild(b);});return d;}
+function ringSvg(){return '<svg class="ring" viewBox="0 0 40 40" aria-hidden="true"><circle class="bg" cx="20" cy="20" r="16"/><circle class="fg" cx="20" cy="20" r="16" stroke-dasharray="100.5" stroke-dashoffset="100.5" transform="rotate(-90 20 20)"/><text x="20" y="21">0%</text></svg>';}
+function buildRooms(){
+  roomsEl.innerHTML='';
+  ROOMS.forEach((r,ri)=>{
+    const det=document.createElement('details');det.className='panel room';det.id='room-'+r.id;det.style.animationDelay=(ri*30)+'ms';
+    const sum=document.createElement('summary');
+    sum.innerHTML='<span class="chev"></span>'+ringSvg()+'<span><div class="rn"></div><div class="rs"></div></span><span class="pill"></span>';
+    sum.querySelector('.rn').textContent=r.name;sum.querySelector('.rs').textContent=r.hint+' · проект '+fmtA(r.proj)+' м²';
+    det.appendChild(sum);
+    const body=document.createElement('div');body.className='rbody';
+    const st=document.createElement('div');st.className='rstats';st.id='rs-'+r.id;body.appendChild(st);
+    const fs=FIELDS[r.id];
+    {const b=grp('Размеры','эскиз · замер · Δ','≈ — размер снят с чертежа, в эскизе его не было');b.appendChild(cells(r,fs.filter(f=>f.grp==='dims')));
+      if(r.chains.length){const c=document.createElement('div');c.className='chains';c.id='ch-'+r.id;b.appendChild(c);}
+      body.appendChild(b);}
+    {const b=grp('Окна и двери','≈ по чертежу');itemsOf(r).filter(o=>TYPES[o.type].k==='open').forEach(o=>b.appendChild(itemBlock(r,o)));
+      b.appendChild(addBtns(r,['win','door']));body.appendChild(b);}
+    {const b=grp('Инженерные точки','','Привязка от левой и верхней стены комнаты так, как она нарисована на плане. С двумя размерами точка появится на плане.');
+      itemsOf(r).filter(o=>TYPES[o.type].k==='pt').forEach(o=>b.appendChild(itemBlock(r,o)));
+      b.appendChild(addBtns(r,['riser','vent','heat','elec','low','beam','other']));body.appendChild(b);}
+    if(r.diag){const b=grp('Диагонали','≈ расчёт по эскизу');b.appendChild(cells(r,fs.filter(f=>f.grp==='diag')));b.appendChild(calc('calcD-'+r.id));body.appendChild(b);}
+    {const b=grp('Высота потолка','мм');b.appendChild(cells(r,fs.filter(f=>f.grp==='h')));b.appendChild(calc('calcH-'+r.id));body.appendChild(b);}
+    {const b=grp('Уровень пола','от лазерной линии вниз','Лазер ставится один раз на всю квартиру. Больше число — ниже пол.');b.appendChild(cells(r,fs.filter(f=>f.grp==='floor')));b.appendChild(calc('calcF-'+r.id));body.appendChild(b);}
+    {const b=grp('Стены','мм');b.appendChild(cells(r,fs.filter(f=>f.grp==='walls')));body.appendChild(b);}
+    {const b=grp('Заметки и дефекты','');const ta=document.createElement('textarea');ta.id='n-'+r.id;ta.dataset.room=r.id;ta.placeholder='Трещины, перепады, завал стен, сколы, мокрые пятна…';ta.setAttribute('aria-label','Заметки: '+r.name);b.appendChild(ta);body.appendChild(b);}
+    det.appendChild(body);
+    det.open=S.view===r.id||!!FOLDS[r.id];
+    det.addEventListener('toggle',()=>{if(S.view==='all'){FOLDS[r.id]=det.open;saveFolds();}});
+    roomsEl.appendChild(det);
+  });
+}
+function buildChips(){
+  const c=document.getElementById('chips');c.innerHTML='';
+  const mk=(id,txt)=>{const b=document.createElement('button');b.type='button';b.className='chip';b.dataset.view=id;b.setAttribute('aria-pressed',String(S.view===id));
+    if(id!=='all'){const s=document.createElement('span');s.className='st';s.id='cs-'+id;b.appendChild(s);}
+    b.append(txt);if(id!=='all'){const p=document.createElement('span');p.className='n';p.id='cp-'+id;b.appendChild(p);}c.appendChild(b);};
+  mk('all','Вся квартира');ROOMS.forEach(r=>mk(r.id,r.short));
+}
+function refreshInputs(force){
+  document.querySelectorAll('.cell input').forEach(inp=>{if(!force&&document.activeElement===inp)return;const v=val(inp.dataset.room,inp.dataset.k);inp.value=v==null?'':String(v);});
+  document.querySelectorAll('textarea[data-room]').forEach(ta=>{if(!force&&document.activeElement===ta)return;ta.value=S.notes[ta.dataset.room]||'';});
+  document.querySelectorAll('input.iname').forEach(ni=>{if(!force&&document.activeElement===ni)return;const o=S.custom[ni.dataset.room].find(x=>x.id===ni.dataset.oid);ni.value=o?o.name:'';});
+}
+function pillHTML(text,c){return '<span class="pill '+pcls(c)+'">'+text+'</span>';}
+function refreshDerived(){
+  let filled=0,bad=0,issues=0,roomsDone=0;const allFloor=[];
+  ROOMS.forEach(r=>{
+    let rf=0,worst=null;const up=c=>{if(c&&(worst==null||rank[c]>rank[worst]))worst=c;};
+    FIELDS[r.id].forEach(f=>{
+      const v=val(r.id,f.k);const dl=document.getElementById('dl-'+r.id+'-'+f.k);
+      if(v!=null){filled++;rf++;if(f.grp==='floor')allFloor.push({v,r});}
+      if(!dl)return;
+      if(v!=null&&f.design!=null&&f.grp!=='diag'){const d=v-f.design;const c=cls(d);dl.className='delta '+c;dl.textContent=sign(d);
+        if(c==='bad'&&f.grp==='dims')bad++;if(f.grp==='dims')up(c);}
+      else{dl.className='delta';dl.textContent='';}
+    });
+    const gs=geo(r);gs.forEach(g=>{if(g.c!=='ok')issues++;up(g.c);});
+    const chs=r.chains.map(c=>({c,i:chainInfo(r,c)}));
+    chs.forEach(x=>{if(x.i.c){if(x.i.c!=='ok')issues++;up(x.i.c);}});
+    if(r.dims.every(d=>val(r.id,d[0])!=null))roomsDone++;
+    const tot=FIELDS[r.id].length,pct=Math.round(rf/tot*100);
+    const ring=document.querySelector('#room-'+r.id+' .ring');
+    if(ring){ring.querySelector('.fg').setAttribute('stroke-dashoffset',String(100.5*(1-rf/tot)));ring.querySelector('text').textContent=pct+'%';}
+    const pill=document.querySelector('#room-'+r.id+' summary .pill');
+    if(pill){pill.className='pill '+pcls(worst);pill.textContent=worst==null?(rf+' / '+tot):worst==='ok'?'В норме':worst==='warn'?'Проверить':'Расхождение';}
+    const cs=document.getElementById('cs-'+r.id);if(cs)cs.className='st'+(worst?' '+worst:'');
+    const cp=document.getElementById('cp-'+r.id);if(cp)cp.textContent=pct?pct+'%':'';
+    const rs=document.getElementById('rs-'+r.id);
+    if(rs){let h=pillHTML('Проект '+fmtA(r.proj)+' м²','');
+      if(r.area){const s=areaOf(r,false),m=areaOf(r,true);h+=pillHTML('Эскиз '+fmtA(s)+' м²','');if(m!=null)h+='<span class="pill p-acc">Замер '+fmtA(m)+' м²</span>';
+        const dev=s!=null?Math.round((s-r.proj)/r.proj*100):0;if(Math.abs(dev)>=12)h+=pillHTML('Эскиз '+(dev>0?'+':'')+dev+'% к проекту — перемерить','warn');}
+      gs.forEach(g=>h+=pillHTML(GEO_NAME[g.t]+' '+g.d+' мм',g.c));rs.innerHTML=h;}
+    const chEl=document.getElementById('ch-'+r.id);
+    if(chEl){chEl.innerHTML='';chs.forEach(({c,i})=>{const d=document.createElement('div');d.className='chain';
+      const st=i.allM?(Math.abs(i.diff)<=10?pillHTML('Сходится','ok'):pillHTML('Δ '+sign(i.diff)+' мм',i.c)):pillHTML(i.filled+' / '+i.n+' замерено','');
+      d.innerHTML='<span class="cn"></span>'+st+'<span class="cf">'+chainHTML(i)+'</span>';d.querySelector('.cn').textContent=c.n;chEl.appendChild(d);});}
+    const cd=document.getElementById('calcD-'+r.id);
+    if(cd){const g=gs.find(x=>x.t==='diag');cd.innerHTML=g?('Разница диагоналей <b class="'+g.c+'">'+g.d+' мм</b>'+(g.c==='ok'?' — углы в норме':g.c==='warn'?' — углы немного не прямые':' — углы заметно не прямые, учесть при плитке и ламинате')):'';}
+    const ch=document.getElementById('calcH-'+r.id);
+    if(ch){const g=gs.find(x=>x.t==='h');ch.innerHTML=g?('Высота от <b>'+g.min+'</b> до <b>'+g.max+'</b> мм, перепад <b class="'+g.c+'">'+g.d+' мм</b>'):'';}
+    const cf=document.getElementById('calcF-'+r.id);
+    if(cf){const g=gs.find(x=>x.t==='floor');cf.innerHTML=g?('Перепад пола в комнате <b class="'+g.c+'">'+g.d+' мм</b>'):'';}
+  });
+  document.getElementById('kFilled').textContent=filled+' / '+TOTAL;
+  document.getElementById('kRooms').textContent=roomsDone+' / '+ROOMS.length;
+  document.getElementById('kBad').textContent=bad;
+  document.getElementById('kGeo').textContent=filled?issues:'—';
+  document.getElementById('pbar').style.width=(filled/TOTAL*100).toFixed(1)+'%';
+  const fn=document.getElementById('floorNote');
+  if(allFloor.length>=2){const mx=allFloor.reduce((a,b)=>b.v>a.v?b:a),mn=allFloor.reduce((a,b)=>b.v<a.v?b:a);
+    fn.innerHTML='Перепад пола по квартире <b>'+(mx.v-mn.v)+' мм</b>: ниже всего — '+mx.r.short.toLowerCase()+', выше всего — '+mn.r.short.toLowerCase()+'.';}
+  else fn.textContent='';
+  const tb=document.getElementById('areaRows');tb.innerHTML='';let tp=0,ts=0,tm=0,mAll=true;
+  ROOMS.forEach(r=>{const s=areaOf(r,false),m=areaOf(r,true);const tr=document.createElement('tr');tr.dataset.view=r.id;
+    tr.innerHTML='<td></td><td>'+fmtA(r.proj)+'</td><td>'+(r.area?fmtA(s):'—')+'</td><td>'+(m!=null?fmtA(m):'—')+'</td>';
+    tr.firstChild.textContent=r.name;tb.appendChild(tr);
+    if(!r.loggia&&r.area){tp+=r.proj;if(s!=null)ts+=s;if(m!=null)tm+=m;else mAll=false;}});
+  document.getElementById('tProj').textContent=fmtA(tp);document.getElementById('tSk').textContent=fmtA(ts);
+  document.getElementById('tMe').textContent=tm>0?(fmtA(tm)+(mAll?'':' …')):'—';
+  drawDynamic();if(shKey){updShDelta();updShChain();}
+}
+
+/* ---------- Ввод ---------- */
+function setVal(rid,k,raw){const n=raw===''?null:Math.round(Number(raw));if(n===null||!isFinite(n)){delete S.vals[rid][k];return null;}S.vals[rid][k]=n;return n;}
+roomsEl.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.matches('.cell input')){setVal(t.dataset.room,t.dataset.k,t.value.trim());refreshDerived();schedule(t.dataset.room);}
+  else if(t.matches('textarea[data-room]')){S.notes[t.dataset.room]=t.value;schedule(t.dataset.room);}
+  else if(t.matches('input.iname')){const o=S.custom[t.dataset.room].find(x=>x.id===t.dataset.oid);if(o){o.name=t.value.slice(0,80);recompute();schedule(t.dataset.room);}}
+});
+roomsEl.addEventListener('focusin',e=>{
+  const c=e.target.closest('.cell');document.querySelectorAll('.cell.on').forEach(x=>x.classList.remove('on'));
+  if(c){c.classList.add('on');S.active=c.dataset.key;drawDynamic();}
+});
+roomsEl.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.matches('.cell input')){e.preventDefault();const all=[...document.querySelectorAll('.room[open]:not([hidden]) .cell input')];const i=all.indexOf(e.target);if(all[i+1])all[i+1].focus();}
+});
+roomsEl.addEventListener('click',e=>{
+  const add=e.target.closest('[data-add]');
+  if(add){const rid=add.dataset.room;const o={id:'c'+Date.now().toString(36),type:TYPES[add.dataset.add]?add.dataset.add:'other',name:''};
+    S.custom[rid].push(o);structureChanged();schedule(rid);const ni=document.getElementById('on-'+rid+'-'+o.id);if(ni)ni.focus();return;}
+  const del=e.target.closest('[data-del]');
+  if(del){
+    if(del.dataset.armed!=='1'){del.dataset.armed='1';del.textContent='Точно удалить?';del.classList.add('danger');setTimeout(()=>{if(del.isConnected){del.dataset.armed='';del.textContent='Удалить';del.classList.remove('danger');}},3000);return;}
+    const rid=del.dataset.room,oid=del.dataset.del;
+    S.custom[rid]=S.custom[rid].filter(x=>x.id!==oid);Object.keys(S.vals[rid]).forEach(k=>{if(k.indexOf(oid+'_')===0)delete S.vals[rid][k];});
+    structureChanged();schedule(rid);toast('Удалено.');
+  }
+});
+function sigOf(){return JSON.stringify(ROOMS.map(r=>S.custom[r.id].map(o=>o.id+':'+o.type)));}
+function structureChanged(){recompute();lastSig=sigOf();buildRooms();layout();refreshInputs(true);refreshDerived();}
+
+/* ---------- Сохранение ---------- */
+function schedule(rid){S.pending[rid]=true;setStatus();clearTimeout(S.timers[rid]);S.timers[rid]=setTimeout(()=>save(rid),700);}
+function bodyOf(rid){return {values:Object.assign({},S.vals[rid]),note:S.notes[rid]||'',openings:S.custom[rid].map(o=>({id:o.id,type:o.type,name:o.name||''})),updatedAt:new Date().toISOString()};}
+async function save(rid){
+  if(S.writing[rid]){S.timers[rid]=setTimeout(()=>save(rid),400);return;}
+  const body=bodyOf(rid);S.writing[rid]=true;
+  try{saveLocal();if(S.db)await S.db.doc('rooms/'+rid).set(body);else if(S.tg)await tgSet(rid,body);S.pending[rid]=false;}
+  catch(err){if(err&&err.code==='unavailable'){S.writing[rid]=false;setTimeout(()=>save(rid),800+Math.random()*600);return;}S.mode='err';S.pending[rid]=false;}
+  finally{S.writing[rid]=false;setStatus();}
+}
+function saveLocal(){try{localStorage.setItem('priemka-t13',JSON.stringify({vals:S.vals,notes:S.notes,custom:S.custom,at:new Date().toISOString()}));}catch(e){}}
+function cleanCustom(a){return Array.isArray(a)?a.filter(o=>o&&typeof o.id==='string'&&/^c[a-z0-9]{1,20}$/.test(o.id)&&TYPES[o.type]&&o.type!=='shaft').map(o=>({id:o.id,type:o.type,name:typeof o.name==='string'?o.name.slice(0,80):''})):[];}
+function applyRoom(rid,b){
+  if(!b||typeof b!=='object')return;
+  S.custom[rid]=cleanCustom(b.openings);
+  const v={};const src=b.values||{};for(const k in src){const x=Number(src[k]);if(isFinite(x)&&/^[A-Za-z0-9_]{1,40}$/.test(k))v[k]=Math.round(x);}
+  S.vals[rid]=v;S.notes[rid]=typeof b.note==='string'?b.note:'';
+}
+function loadLocal(){try{const j=JSON.parse(localStorage.getItem('priemka-t13')||'null');if(j)ROOMS.forEach(r=>applyRoom(r.id,{values:j.vals&&j.vals[r.id],note:j.notes&&j.notes[r.id],openings:j.custom&&j.custom[r.id]}));}catch(e){}}
+function afterLoad(){if(sigOf()!==lastSig)structureChanged();else{recompute();refreshInputs(false);refreshDerived();}}
+function setStatus(){
+  const st=document.getElementById('status');const busy=Object.values(S.pending).some(Boolean);const m=S.mode;
+  st.className='save '+((m==='cloud'||m==='tg')?'cloud':m==='local'?'local':m==='err'?'err':'');
+  const txt=busy?'Сохраняю…':m==='tg'?'Сохранено в Telegram':m==='cloud'?'Сохранено в облаке':m==='local'?'Сохранено в браузере':m==='err'?'Облако недоступно':'Подключаю хранилище…';
+  st.lastChild.textContent=txt;st.title=txt;
+}
+
+/* ---------- Масштаб и жесты ---------- */
+const VB0={x:10,y:20,w:1880,h:2070};let vb=Object.assign({},VB0);let anim=0;
+const pbox=document.getElementById('planscroll');
+function applyVB(){svg.setAttribute('viewBox',vb.x+' '+vb.y+' '+vb.w+' '+vb.h);}
+function scaleInfo(){const r=svg.getBoundingClientRect();const s=Math.min(r.width/vb.w,r.height/vb.h)||1;return {s,ox:r.left+(r.width-vb.w*s)/2,oy:r.top+(r.height-vb.h*s)/2};}
+function toSvg(cx,cy){const i=scaleInfo();return {x:vb.x+(cx-i.ox)/i.s,y:vb.y+(cy-i.oy)/i.s};}
+function clampVB(){const m=Math.max(0,(1-vb.w/VB0.w))*vb.w*0.5;vb.x=Math.min(Math.max(vb.x,VB0.x-m),VB0.x+VB0.w-vb.w+m);vb.y=Math.min(Math.max(vb.y,VB0.y-m),VB0.y+VB0.h-vb.h+m);}
+function zoomAt(cx,cy,f){cancelAnimationFrame(anim);const p=toSvg(cx,cy);const nw=Math.min(VB0.w,Math.max(VB0.w/8,vb.w/f));const k=nw/vb.w;vb.x=p.x-(p.x-vb.x)*k;vb.y=p.y-(p.y-vb.y)*k;vb.w=nw;vb.h=VB0.h*nw/VB0.w;clampVB();applyVB();}
+function zoomCenter(f){const r=pbox.getBoundingClientRect();zoomAt(r.left+r.width/2,r.top+r.height/2,f);}
+function animateTo(t){
+  cancelAnimationFrame(anim);
+  if(RM.matches){vb=Object.assign({},t);applyVB();return;}
+  const s=Object.assign({},vb),t0=performance.now(),D=320;
+  const stepA=now=>{const p=Math.min(1,(now-t0)/D),e=1-Math.pow(1-p,3);vb={x:s.x+(t.x-s.x)*e,y:s.y+(t.y-s.y)*e,w:s.w+(t.w-s.w)*e,h:s.h+(t.h-s.h)*e};applyVB();if(p<1)anim=requestAnimationFrame(stepA);};
+  anim=requestAnimationFrame(stepA);
+}
+function roomBox(rid){const r=roomById(rid);const [x1,y1,x2,y2]=r.rect;const pad=150;let w=x2-x1+2*pad,h=y2-y1+2*pad;const ar=VB0.w/VB0.h;if(w/h>ar)h=w/ar;else w=h*ar;return {x:(x1+x2)/2-w/2,y:(y1+y2)/2-h/2,w,h};}
+function fit(){animateTo(S.view==='all'?VB0:roomBox(S.view));}
+function focusPoint(x,y,w){cancelAnimationFrame(anim);if(vb.w>w){vb.w=w;vb.h=VB0.h*w/VB0.w;}vb.x=x-vb.w/2;vb.y=y-vb.h*0.4;clampVB();applyVB();}
+document.getElementById('zIn').addEventListener('click',()=>zoomCenter(1.5));
+document.getElementById('zOut').addEventListener('click',()=>zoomCenter(1/1.5));
+document.getElementById('zFit').addEventListener('click',fit);
+const ptrs=new Map();let moved=false,start=null,pinch=null;
+function pinchState(){const [a,b]=[...ptrs.values()];return {cx:(a.x+b.x)/2,cy:(a.y+b.y)/2,d:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y))};}
+pbox.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'&&e.button!==0)return;cancelAnimationFrame(anim);
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1){moved=false;start={x:e.clientX,y:e.clientY};}
+  if(ptrs.size===2){pinch=pinchState();moved=true;}
+});
+window.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId))return;const prev=ptrs.get(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1){if(!moved&&Math.hypot(e.clientX-start.x,e.clientY-start.y)>7)moved=true;
+    if(moved){const s=scaleInfo().s;vb.x-=(e.clientX-prev.x)/s;vb.y-=(e.clientY-prev.y)/s;clampVB();applyVB();}}
+  else if(ptrs.size===2&&pinch){const n=pinchState();const s=scaleInfo().s;vb.x-=(n.cx-pinch.cx)/s;vb.y-=(n.cy-pinch.cy)/s;zoomAt(n.cx,n.cy,n.d/pinch.d);pinch=n;}
+});
+function endPtr(e){if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(ptrs.size===1){const p=[...ptrs.values()][0];start={x:p.x,y:p.y};}}
+window.addEventListener('pointerup',endPtr);window.addEventListener('pointercancel',endPtr);
+svg.addEventListener('click',e=>{if(moved){e.stopImmediatePropagation();e.preventDefault();moved=false;}},true);
+pbox.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY*0.0015));},{passive:false});
+['gesturestart','gesturechange'].forEach(ev=>pbox.addEventListener(ev,e=>e.preventDefault()));
+
+/* ---------- Вид ---------- */
+const vPlan=document.getElementById('vPlan'),vSum=document.getElementById('vSum'),vTips=document.getElementById('vTips'),roomNav=document.getElementById('roomNav');
+function setView(v,opts){
+  S.view=v;document.querySelectorAll('#chips .chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.view===v)));
+  const r=v==='all'?null:roomById(v);
+  document.getElementById('planTitle').textContent=r?r.name:'Вся квартира';
+  if(r){const det=document.getElementById('room-'+v);if(det)det.open=true;
+    const i=ROOMS.indexOf(r);document.getElementById('rnPrev').textContent='‹ '+ROOMS[(i+ROOMS.length-1)%ROOMS.length].short;document.getElementById('rnNext').textContent=ROOMS[(i+1)%ROOMS.length].short+' ›';}
+  else ROOMS.forEach(x=>{const det=document.getElementById('room-'+x.id);if(det)det.open=!!FOLDS[x.id];});
+  layout();drawDynamic();
+  if(!(opts&&opts.noZoom))animateTo(r?roomBox(v):VB0);
+  const chip=document.querySelector('#chips .chip[data-view="'+v+'"]');if(chip&&chip.scrollIntoView)chip.scrollIntoView({block:'nearest',inline:'center',behavior:RM.matches?'auto':'smooth'});
+}
+document.getElementById('chips').addEventListener('click',e=>{const c=e.target.closest('.chip');if(c){closeSheet();setView(c.dataset.view);}});
+document.getElementById('areaRows').addEventListener('click',e=>{const tr=e.target.closest('tr[data-view]');if(tr){setView(tr.dataset.view);if(mq.matches)setTab('rooms');}});
+document.getElementById('rnAll').addEventListener('click',()=>setView('all'));
+function stepRoom(d){const i=ROOMS.findIndex(r=>r.id===S.view);setView(ROOMS[(i+d+ROOMS.length)%ROOMS.length].id);}
+document.getElementById('rnPrev').addEventListener('click',()=>stepRoom(-1));
+document.getElementById('rnNext').addEventListener('click',()=>stepRoom(1));
+function layout(){
+  const m=mq.matches,v=S.view;
+  vPlan.hidden=m&&tab!=='plan';
+  const showRooms=!m||tab==='rooms';
+  roomsEl.hidden=!showRooms;
+  roomNav.hidden=!showRooms||v==='all';
+  vSum.hidden=m?tab!=='sum':v!=='all';
+  vTips.hidden=m?tab!=='sum':v!=='all';
+  document.querySelectorAll('.room').forEach(d=>{d.hidden=v!=='all'&&d.id!=='room-'+v;});
+  requestAnimationFrame(sizePlan);
+}
+
+/* ---------- План ↔ поля ---------- */
+function focusKey(key){
+  const {rid,k,f}=fieldOf(key);if(!f)return;
+  if(S.view!=='all'&&S.view!==rid)setView(rid,{noZoom:true});
+  const det=document.getElementById('room-'+rid);det.open=true;
+  const inp=document.getElementById('f-'+rid+'-'+k);if(!inp)return;S.active=key;drawDynamic();
+  inp.scrollIntoView({block:'center',behavior:RM.matches?'auto':'smooth'});
+  setTimeout(()=>inp.focus({preventScroll:true}),250);
+}
+function activate(key){if(mq.matches)openSheet(key);else focusKey(key);}
+svg.addEventListener('click',e=>{
+  const d=e.target.closest('[data-key]');if(d){activate(d.dataset.key);return;}
+  const l=e.target.closest('.rlabel');if(l)setView(l.dataset.room);
+});
+svg.addEventListener('keydown',e=>{const d=e.target.closest('[data-key]');if(d&&(e.key==='Enter'||e.key===' ')){e.preventDefault();activate(d.dataset.key);}});
+
+/* ---------- Нижняя панель ввода ---------- */
+const sh=document.getElementById('sheet'),shIn=document.getElementById('shIn');
+const orderList=()=>S.view==='all'?ORDER:ORDER.filter(k=>k.indexOf(S.view+'.')===0);
+function fieldPos(r,f){if(f.pos)return f.pos;if(f.oid){const o=itemsOf(r).find(x=>x.id===f.oid);const p=o&&ptPos(r,o);if(p)return p;}return [(r.rect[0]+r.rect[2])/2,(r.rect[1]+r.rect[3])/2];}
+function openSheet(key){
+  const {r,f,rid,k}=fieldOf(key);if(!f)return;shKey=key;
+  document.getElementById('shRoom').textContent=r.name;document.getElementById('shLbl').textContent=f.full;
+  document.getElementById('shDz').textContent=f.design==null?'—':(f.approx?'≈':'')+f.design;
+  const v=val(rid,k);shIn.value=v==null?'':String(v);
+  sh.hidden=false;S.active=key;drawDynamic();updShDelta();updShChain();
+  const L=orderList(),i=L.indexOf(key);document.getElementById('shPrev').disabled=i<=0;
+  document.getElementById('shNext').textContent=i>=L.length-1?'Готово':'Далее ›';
+  document.getElementById('shPos').textContent=(i+1)+' / '+L.length;
+  const p=fieldPos(r,f);focusPoint(p[0],p[1],S.view==='all'?VB0.w/2.2:Math.min(vb.w,VB0.w/2.2));
+  positionSheet();shIn.focus({preventScroll:true});
+}
+function updShDelta(){if(!shKey)return;const {f,rid,k}=fieldOf(shKey);const out=document.getElementById('shDl');const v=val(rid,k);
+  if(f&&v!=null&&f.design!=null&&f.grp!=='diag'){const d=v-f.design;out.className='delta '+cls(d);out.textContent=sign(d);}else{out.className='delta';out.textContent='';}}
+function updShChain(){
+  const out=document.getElementById('shChain');out.innerHTML='';if(!shKey)return;
+  ROOMS.forEach(r=>r.chains.forEach(c=>{const refs=c.p.concat([c.t]).map(k=>keyRef(r,k));if(refs.indexOf(shKey)<0)return;
+    const i=chainInfo(r,c);const st=i.allM?(Math.abs(i.diff)<=10?' <span class="ok">сходится</span>':' <span class="'+i.c+'">Δ '+sign(i.diff)+' мм</span>'):'';
+    const d=document.createElement('div');d.innerHTML=c.n+': '+chainHTML(i)+st;out.appendChild(d);}));
+}
+shIn.addEventListener('input',()=>{if(!shKey)return;const {rid,k}=fieldOf(shKey);const n=setVal(rid,k,shIn.value.trim());
+  const ri=document.getElementById('f-'+rid+'-'+k);if(ri)ri.value=n==null?'':String(n);refreshDerived();schedule(rid);});
+function step(dir){const L=orderList(),i=L.indexOf(shKey)+dir;if(i<0)return;if(i>=L.length){closeSheet();return;}openSheet(L[i]);}
+document.getElementById('shNext').addEventListener('click',()=>step(1));
+document.getElementById('shPrev').addEventListener('click',()=>step(-1));
+shIn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();step(1);}});
+document.getElementById('shClose').addEventListener('click',closeSheet);
+function closeSheet(){if(sh.hidden)return;sh.hidden=true;shKey=null;S.active=null;shIn.blur();drawDynamic();}
+function positionSheet(){const vv=window.visualViewport;const tb=document.getElementById('tabbar').offsetHeight;let kb=0;if(vv)kb=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);sh.style.bottom=(kb>60?kb:tb)+'px';}
+if(window.visualViewport){visualViewport.addEventListener('resize',positionSheet);visualViewport.addEventListener('scroll',positionSheet);}
+
+/* ---------- Вкладки ---------- */
+function sizePlan(){
+  if(mq.matches&&!vPlan.hidden){const top=pbox.getBoundingClientRect().top+window.scrollY;const tb=document.getElementById('tabbar').offsetHeight;const lg=pbox.nextElementSibling.offsetHeight;
+    pbox.style.height=Math.max(300,window.innerHeight-top-tb-lg-10)+'px';}
+  else pbox.style.height='';
+}
+function setTab(t){
+  tab=t;document.querySelectorAll('#tabbar button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));
+  if(t!=='plan')closeSheet();layout();if(mq.matches)window.scrollTo(0,0);
+}
+document.getElementById('tabbar').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)setTab(b.dataset.tab);});
+if(mq.addEventListener)mq.addEventListener('change',layout);else mq.addListener(layout);
+window.addEventListener('resize',()=>{if(!shKey)sizePlan();});
+
+/* ---------- Экспорт и файлы ---------- */
+function rowsForExport(){
+  const out=[['Помещение','Параметр','Эскиз, мм','Замер, мм','Δ, мм']];
+  ROOMS.forEach(r=>{
+    FIELDS[r.id].forEach(f=>{const v=val(r.id,f.k);if(v==null&&f.design==null)return;
+      out.push([r.name,f.full,f.design==null?'':String(f.design),v==null?'':String(v),(v!=null&&f.design!=null&&f.grp!=='diag')?String(v-f.design):'']);});
+    const m=areaOf(r,true);if(m!=null)out.push([r.name,'Площадь по замеру, м²','',fmtA(m),'']);
+    r.chains.forEach(c=>{const i=chainInfo(r,c);if(i.allM)out.push([r.name,'Цепочка: '+c.n+' (сумма частей минус общий)','',String(-i.diff),'']);});
+    for(const g of geo(r))out.push([r.name,GEO_NAME[g.t],'',String(g.d),'']);
+    if(S.notes[r.id])out.push([r.name,'Заметки','',S.notes[r.id].replace(/\s+/g,' '),'']);
+  });
+  return out;
+}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;clearTimeout(toast.t);toast.t=setTimeout(()=>e.textContent='',4000);}
+document.getElementById('bCopy').addEventListener('click',()=>{
+  const txt=rowsForExport().map(r=>r.join('\t')).join('\n');
+  const p=navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(txt):Promise.reject();
+  p.then(()=>toast('Таблица скопирована — вставляйте в Google Таблицы или Excel.')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand('copy');}catch(e){}ta.remove();toast(ok?'Таблица скопирована.':'Не удалось скопировать: браузер запретил доступ к буферу.');});
+});
+function fstamp(){const d=new Date(),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'_'+z(d.getHours())+'-'+z(d.getMinutes());}
+async function saveFile(filename,text,mime){
+  if(S.dl){const res=await S.dl.save({filename,data:text});return res&&res.status==='saved';}
+  if(STANDALONE&&!TGA){const url=URL.createObjectURL(new Blob([text],{type:mime}));const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);return true;}
+  return false;
+}
+document.getElementById('bCsv').addEventListener('click',async()=>{
+  const csv='﻿'+rowsForExport().map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  try{if(await saveFile('priemka-tip13_'+fstamp()+'.csv',csv,'text/csv'))toast('CSV сохранён в «Загрузки».');}catch(e){if(e&&e.code==='unavailable')document.getElementById('bCsv').hidden=true;}
+});
+document.getElementById('bBackup').addEventListener('click',async()=>{
+  const data=JSON.stringify({app:'priemka-tip13',version:4,savedAt:new Date().toISOString(),vals:S.vals,notes:S.notes,custom:S.custom},null,1);
+  try{if(await saveFile('zamery-tip13_'+fstamp()+'.json',data,'application/json'))toast('Файл с замерами сохранён в «Загрузки».');}catch(e){if(e&&e.code==='unavailable')document.getElementById('bBackup').hidden=true;}
+});
+document.getElementById('fImport').addEventListener('change',e=>{
+  const file=e.target.files&&e.target.files[0];if(!file)return;const rd=new FileReader();
+  rd.onload=()=>{
+    try{const j=JSON.parse(rd.result);if(!j||j.app!=='priemka-tip13'||typeof j.vals!=='object')throw 0;
+      let n=0;ROOMS.forEach(r=>{applyRoom(r.id,{values:j.vals[r.id],note:j.notes&&j.notes[r.id],openings:j.custom&&j.custom[r.id]});n+=Object.keys(S.vals[r.id]).length;schedule(r.id);});
+      structureChanged();toast('Загружено '+n+' замеров из файла '+file.name+'.');
+    }catch(err){toast('Этот файл не подходит: нужен файл с замерами, сохранённый этой страницей.');}
+    e.target.value='';
+  };
+  rd.readAsText(file);
+});
+
+/* ---------- Telegram ---------- */
+function tgGet(keys){return new Promise(res=>{try{TGA.CloudStorage.getItems(keys,(err,v)=>res(err?null:v));}catch(e){res(null);}});}
+function tgSet(rid,body){return new Promise((res,rej)=>{
+  let s=JSON.stringify(body);
+  if(s.length>4000){const note=body.note||'';body=Object.assign({},body,{note:note.slice(0,Math.max(0,note.length-(s.length-3990)))});s=JSON.stringify(body);toast('Заметка длинная для Telegram и сохранена сокращённой.');}
+  try{TGA.CloudStorage.setItem('room_'+rid,s,(err)=>err?rej({code:'tg',message:String(err)}):res());}catch(e){rej({code:'tg'});}
+});}
+async function startTg(){
+  try{TGA.ready();TGA.expand();if(TGA.disableVerticalSwipes)TGA.disableVerticalSwipes();}catch(e){}
+  let saved=null;try{saved=localStorage.getItem('priemka-theme');}catch(e){}
+  if(!saved){const th=()=>document.documentElement.setAttribute('data-theme',TGA.colorScheme==='dark'?'dark':'light');th();try{TGA.onEvent('themeChanged',th);}catch(e){}}
+  if(!TGA.CloudStorage||!(TGA.isVersionAtLeast&&TGA.isVersionAtLeast('6.9'))){S.mode='local';setStatus();return;}
+  S.tg=true;S.mode='tg';setStatus();
+  const v=await tgGet(ROOMS.map(r=>'room_'+r.id));
+  if(v){ROOMS.forEach(r=>{const raw=v['room_'+r.id];
+    if(raw){try{applyRoom(r.id,JSON.parse(raw));}catch(e){}}
+    else if(Object.keys(S.vals[r.id]).length||S.notes[r.id]||S.custom[r.id].length)schedule(r.id);});
+    afterLoad();}
+}
+
+/* ---------- Старт ---------- */
+drawStatic();buildChips();buildRooms();
+loadLocal();structureChanged();
+setStatus();setTab('plan');
+window.addEventListener('load',sizePlan);
+if(STANDALONE&&!TGA){document.getElementById('bCsv').hidden=false;document.getElementById('bBackup').hidden=false;}
+const cl=window.claude;
+if(TGA){startTg();}
+else if(cl&&cl.use){
+  cl.use('downloads').then(dl=>{if(dl){S.dl=dl;document.getElementById('bCsv').hidden=false;document.getElementById('bBackup').hidden=false;}}).catch(()=>{});
+  cl.use('db').then(db=>{
+    if(!db){S.mode='local';setStatus();return;}
+    S.db=db;S.mode='cloud';setStatus();let first=true;
+    db.collection('rooms').onSnapshot(snap=>{
+      snap.docs.forEach(d=>{const rid=d.id;if(!S.vals[rid])return;if(S.pending[rid]||S.writing[rid])return;applyRoom(rid,d.data()||{});});
+      if(first){first=false;if(snap.empty)ROOMS.forEach(r=>{if(Object.keys(S.vals[r.id]).length||S.notes[r.id]||S.custom[r.id].length)schedule(r.id);});}
+      afterLoad();
+    },()=>{S.mode='err';S.db=null;setStatus();});
+  }).catch(()=>{S.mode='local';setStatus();});
+}else{S.mode='local';setStatus();}
+})();
+</script>
+
+</body>
+</html>
