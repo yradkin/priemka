@@ -240,6 +240,11 @@ input.iname:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px v
 .adds{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 textarea{width:100%;min-height:76px;font-family:var(--f);font-size:14px;padding:10px 12px;border:1px solid var(--line);background:var(--field);color:var(--txt);resize:vertical;border-radius:var(--r-sm);outline:none}
 textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.projrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.projrow label{font-size:11.5px;font-weight:600;color:var(--txt-3)}
+.projrow input{width:110px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--field);color:var(--txt);padding:0 10px;font-family:var(--f);font-size:15px;font-weight:600;outline:none;font-variant-numeric:tabular-nums}
+.projrow input:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.projrow input.chg{border-color:var(--warn)}
 .build{font-size:11px;color:var(--txt-3);text-align:center;margin-top:20px;font-variant-numeric:tabular-nums}
 
 /* слои плана: потолок / пол */
@@ -409,7 +414,7 @@ textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft
       <div id="rooms" class="col"></div>
     </section>
   </div>
-  <div class="build">BUILD 2026-10-25.02</div>
+  <div class="build">BUILD 2026-10-25.03</div>
 </div>
 
 <div class="sheet" id="sheet" hidden role="dialog" aria-label="Ввод размера">
@@ -557,6 +562,7 @@ const WALLQ=[['wv','Отклонение от вертикали, макс.'],['
 const S={vals:{},notes:{},custom:{},pending:{},timers:{},writing:{},db:null,tg:false,mode:'init',dl:null,active:null,view:'all',layer:'dims'};
 ROOMS.forEach(r=>{S.vals[r.id]={};S.notes[r.id]='';S.custom[r.id]=[];});
 const roomById=id=>ROOMS.find(r=>r.id===id);
+const projOf=r=>{const v=num(S.vals[r.id].projA);return v!=null?v/100:r.proj;};
 const itemsOf=r=>r.items.concat(S.custom[r.id]);
 const dimCenter=(o,c,a,b)=>o==='h'?[(a+b)/2,c]:[c,(a+b)/2];
 const itemName=o=>o.name||('Новая точка: '+TYPES[o.type].n.toLowerCase());
@@ -758,10 +764,11 @@ function buildRooms(){
     const det=document.createElement('details');det.className='panel room';det.id='room-'+r.id;det.style.animationDelay=(ri*30)+'ms';
     const sum=document.createElement('summary');
     sum.innerHTML='<span class="chev"></span>'+ringSvg()+'<span><div class="rn"></div><div class="rs"></div></span><span class="pill"></span>';
-    sum.querySelector('.rn').textContent=r.name;sum.querySelector('.rs').textContent=r.hint+' · проект '+fmtA(r.proj)+' м²';
+    sum.querySelector('.rn').textContent=r.name;sum.querySelector('.rs').textContent=r.hint+' · проект '+fmtA(projOf(r))+' м²';
     det.appendChild(sum);
     const body=document.createElement('div');body.className='rbody';
     const st=document.createElement('div');st.className='rstats';st.id='rs-'+r.id;body.appendChild(st);
+    {const pr=document.createElement('div');pr.className='projrow';pr.innerHTML='<label for="pa-'+r.id+'">Площадь по проекту, м²</label><input id="pa-'+r.id+'" class="pa" inputmode="decimal" autocomplete="off" data-room="'+r.id+'"><button type="button" class="secondary-btn sm" data-resetpa="'+r.id+'" title="Вернуть значение с чертежа застройщика">Как на чертеже</button>';body.appendChild(pr);}
     const fs=FIELDS[r.id];
     {const b=grp('Размеры','эскиз · замер · Δ','≈ — размер снят с чертежа, в эскизе его не было');b.appendChild(cells(r,fs.filter(f=>f.grp==='dims')));
       if(r.chains.length){const c=document.createElement('div');c.className='chains';c.id='ch-'+r.id;b.appendChild(c);}
@@ -792,6 +799,7 @@ function buildChips(){
 function refreshInputs(force){
   document.querySelectorAll('.cell input').forEach(inp=>{if(!force&&document.activeElement===inp)return;const v=val(inp.dataset.room,inp.dataset.k);inp.value=v==null?'':String(v);});
   document.querySelectorAll('textarea[data-room]').forEach(ta=>{if(!force&&document.activeElement===ta)return;ta.value=S.notes[ta.dataset.room]||'';});
+  document.querySelectorAll('input.pa').forEach(i=>{const r=roomById(i.dataset.room);i.classList.toggle('chg',num(S.vals[r.id].projA)!=null);if(!force&&document.activeElement===i)return;i.value=fmtA(projOf(r));});
   document.querySelectorAll('input.iname').forEach(ni=>{if(!force&&document.activeElement===ni)return;const o=S.custom[ni.dataset.room].find(x=>x.id===ni.dataset.oid);ni.value=o?o.name:'';});
 }
 function pillHTML(text,c){return '<span class="pill '+pcls(c)+'">'+text+'</span>';}
@@ -816,12 +824,14 @@ function refreshDerived(){
     if(ring){ring.querySelector('.fg').setAttribute('stroke-dashoffset',String(100.5*(1-rf/tot)));ring.querySelector('text').textContent=pct+'%';}
     const pill=document.querySelector('#room-'+r.id+' summary .pill');
     if(pill){pill.className='pill '+pcls(worst);pill.textContent=worst==null?(rf+' / '+tot):worst==='ok'?'В норме':worst==='warn'?'Проверить':'Расхождение';}
+    const rsT=document.querySelector('#room-'+r.id+' summary .rs');if(rsT)rsT.textContent=r.hint+' · проект '+fmtA(projOf(r))+' м²';
+    const paI=document.getElementById('pa-'+r.id);if(paI)paI.classList.toggle('chg',num(S.vals[r.id].projA)!=null);
     const cs=document.getElementById('cs-'+r.id);if(cs)cs.className='st'+(worst?' '+worst:'');
     const cp=document.getElementById('cp-'+r.id);if(cp)cp.textContent=pct?pct+'%':'';
     const rs=document.getElementById('rs-'+r.id);
-    if(rs){let h=pillHTML('Проект '+fmtA(r.proj)+' м²','');
+    if(rs){let h=pillHTML('Проект '+fmtA(projOf(r))+' м²','');
       if(r.area){const s=areaOf(r,false),m=areaOf(r,true);h+=pillHTML('Эскиз '+fmtA(s)+' м²','');if(m!=null)h+='<span class="pill p-acc">Замер '+fmtA(m)+' м²</span>';
-        const dev=s!=null?Math.round((s-r.proj)/r.proj*100):0;if(Math.abs(dev)>=12)h+=pillHTML('Эскиз '+(dev>0?'+':'')+dev+'% к проекту — перемерить','warn');}
+        const dev=s!=null?Math.round((s-projOf(r))/projOf(r)*100):0;if(Math.abs(dev)>=12)h+=pillHTML('Эскиз '+(dev>0?'+':'')+dev+'% к проекту — перемерить','warn');}
       gs.forEach(g=>h+=pillHTML(GEO_NAME[g.t]+' '+g.d+' мм',g.c));rs.innerHTML=h;}
     const chEl=document.getElementById('ch-'+r.id);
     if(chEl){chEl.innerHTML='';chs.forEach(({c,i})=>{const d=document.createElement('div');d.className='chain';
@@ -845,10 +855,11 @@ function refreshDerived(){
   else fn.textContent='';
   const tb=document.getElementById('areaRows');tb.innerHTML='';let tp=0,ts=0,tm=0,mAll=true;
   ROOMS.forEach(r=>{const s=areaOf(r,false),m=areaOf(r,true);const tr=document.createElement('tr');tr.dataset.view=r.id;
-    tr.innerHTML='<td></td><td>'+fmtA(r.proj)+'</td><td>'+(r.area?fmtA(s):'—')+'</td><td>'+(m!=null?fmtA(m):'—')+'</td>';
+    tr.innerHTML='<td></td><td>'+fmtA(projOf(r))+'</td><td>'+(r.area?fmtA(s):'—')+'</td><td>'+(m!=null?fmtA(m):'—')+'</td>';
     tr.firstChild.textContent=r.name;tb.appendChild(tr);
-    if(!r.loggia&&r.area){tp+=r.proj;if(s!=null)ts+=s;if(m!=null)tm+=m;else mAll=false;}});
-  document.getElementById('tProj').textContent=fmtA(tp);document.getElementById('tSk').textContent=fmtA(ts);
+    if(!r.loggia&&r.area){tp+=projOf(r);if(s!=null)ts+=s;if(m!=null)tm+=m;else mAll=false;}});
+  document.getElementById('tProj').textContent=fmtA(tp);
+  {let all=0;ROOMS.forEach(r=>{if(!r.loggia)all+=projOf(r);});const vp=document.querySelector('.version');if(vp)vp.textContent=fmtA(all)+' м² по проекту';}document.getElementById('tSk').textContent=fmtA(ts);
   document.getElementById('tMe').textContent=tm>0?(fmtA(tm)+(mAll?'':' …')):'—';
   drawDynamic();if(shKey){updShDelta();updShChain();}
 }
@@ -859,6 +870,7 @@ roomsEl.addEventListener('input',e=>{
   const t=e.target;
   if(t.matches('.cell input')){setVal(t.dataset.room,t.dataset.k,t.value.trim());refreshDerived();schedule(t.dataset.room);}
   else if(t.matches('textarea[data-room]')){S.notes[t.dataset.room]=t.value;schedule(t.dataset.room);}
+  else if(t.matches('input.pa')){const rid=t.dataset.room,raw=t.value.trim().replace(',','.'),n=parseFloat(raw);if(raw===''||!isFinite(n)||n<=0)delete S.vals[rid].projA;else S.vals[rid].projA=Math.round(n*100);refreshDerived();schedule(rid);}
   else if(t.matches('input.iname')){const o=S.custom[t.dataset.room].find(x=>x.id===t.dataset.oid);if(o){o.name=t.value.slice(0,80);recompute();schedule(t.dataset.room);}}
 });
 roomsEl.addEventListener('focusin',e=>{
@@ -869,6 +881,8 @@ roomsEl.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target.matches('.cell input')){e.preventDefault();const all=[...document.querySelectorAll('.room[open]:not([hidden]) .cell input')];const i=all.indexOf(e.target);if(all[i+1])all[i+1].focus();}
 });
 roomsEl.addEventListener('click',e=>{
+  const rp=e.target.closest('[data-resetpa]');
+  if(rp){const rid=rp.dataset.resetpa;delete S.vals[rid].projA;refreshInputs(true);refreshDerived();schedule(rid);toast('Площадь по проекту: '+fmtA(roomById(rid).proj)+' м², как на чертеже.');return;}
   const add=e.target.closest('[data-add]');
   if(add){const rid=add.dataset.room;const o={id:'c'+Date.now().toString(36),type:TYPES[add.dataset.add]?add.dataset.add:'other',name:''};
     S.custom[rid].push(o);structureChanged();schedule(rid);const ni=document.getElementById('on-'+rid+'-'+o.id);if(ni)ni.focus();return;}
@@ -1061,6 +1075,7 @@ function rowsForExport(){
     FIELDS[r.id].forEach(f=>{const v=val(r.id,f.k);if(v==null&&f.design==null)return;
       out.push([r.name,f.full,f.design==null?'':String(f.design),v==null?'':String(v),(v!=null&&f.design!=null&&f.grp!=='diag')?String(v-f.design):'']);});
     const m=areaOf(r,true);if(m!=null)out.push([r.name,'Площадь по замеру, м²','',fmtA(m),'']);
+    if(num(S.vals[r.id].projA)!=null)out.push([r.name,'Площадь по проекту (уточнена), м²',fmtA(r.proj),fmtA(projOf(r)),'']);
     r.chains.forEach(c=>{const i=chainInfo(r,c);if(i.allM)out.push([r.name,'Цепочка: '+c.n+' (сумма частей минус общий)','',String(-i.diff),'']);});
     for(const g of geo(r))out.push([r.name,GEO_NAME[g.t],'',String(g.d),'']);
     if(S.notes[r.id])out.push([r.name,'Заметки','',S.notes[r.id].replace(/\s+/g,' '),'']);
@@ -1180,7 +1195,7 @@ async function buildReport(){
   const cx=[P+16,640,800,W-P-16];
   rr(cur.x,P,cur.y,W-2*P,52,14,C.card2);['ПОМЕЩЕНИЕ','ПРОЕКТ','ЭСКИЗ','ЗАМЕР, М²'].forEach((h,i)=>tx(cur.x,h,cx[i],cur.y+34,16,C.t3,700,i?'right':'left'));cur.y+=52;
   ROOMS.forEach(r=>{const s=areaOf(r,false),m=areaOf(r,true);
-    tx(cur.x,r.name,cx[0],cur.y+36,23,C.txt,500);tx(cur.x,fmtA(r.proj),cx[1],cur.y+36,23,C.t2,500,'right');tx(cur.x,r.area?fmtA(s):'—',cx[2],cur.y+36,23,C.t2,500,'right');tx(cur.x,m!=null?fmtA(m):'—',cx[3],cur.y+36,23,m!=null?C.acc:C.t3,700,'right');
+    tx(cur.x,r.name,cx[0],cur.y+36,23,C.txt,500);tx(cur.x,fmtA(projOf(r)),cx[1],cur.y+36,23,C.t2,500,'right');tx(cur.x,r.area?fmtA(s):'—',cx[2],cur.y+36,23,C.t2,500,'right');tx(cur.x,m!=null?fmtA(m):'—',cx[3],cur.y+36,23,m!=null?C.acc:C.t3,700,'right');
     cur.y+=52;cur.x.fillStyle=C.line;cur.x.fillRect(P,cur.y,W-2*P,1);});
   cur.y+=30;
   await secT('Замечания');
@@ -1203,7 +1218,7 @@ async function buildReport(){
       await ensure(260);
       cur.x.fillStyle=C.line;cur.x.fillRect(P,cur.y,W-2*P,2);cur.y+=18;
       tx(cur.x,r.name,P,cur.y+40,36,C.txt,700);tx(cur.x,r.hint,P,cur.y+76,20,C.t3,500);cur.y+=96;
-      let px=P;px+=rpill(cur.x,'Проект '+fmtA(r.proj)+' м²',px,cur.y)+10;
+      let px=P;px+=rpill(cur.x,'Проект '+fmtA(projOf(r))+' м²',px,cur.y)+10;
       if(r.area){px+=rpill(cur.x,'Эскиз '+fmtA(areaOf(r,false))+' м²',px,cur.y)+10;const m=areaOf(r,true);if(m!=null){cur.x.font='600 20px '+REP.font;const w=cur.x.measureText('Замер '+fmtA(m)+' м²').width+28;rr(cur.x,px,cur.y,w,36,18,C.accS);tx(cur.x,'Замер '+fmtA(m)+' м²',px+14,cur.y+25,20,C.acc,700);}}
       cur.y+=60;
       const rows=FIELDS[r.id].filter(f=>{const v=val(r.id,f.k);if(f.grp==='h'||f.grp==='floor')return false;if(f.grp==='dims')return true;return v!=null;});
