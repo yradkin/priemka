@@ -1435,6 +1435,7 @@ async function srvConnect(){if(!HAS_SRV||!(TGA||WEBTOK))return;
   catch(e){SV.err=e.code||'net';if(!S.tg)S.mode=e.code==='full'?'local':'err';setStatus();if(e.code==='full')toast('На сервере «Обмера» больше нет мест для новых людей.');else if(!SV.again){SV.again=setTimeout(()=>{SV.again=0;if(!SV.on)srvConnect();},15000);}}}
 async function srvPull(){if(!SV.on||SV.pulling)return;SV.pulling=true;try{const r=await api('pull');mergeRooms(r.rooms||{},false);if(Object.keys(SV.dirty).length)flushDirty();}catch(e){}SV.pulling=false;}
 
+const WEB_APPNAME='obmer77';   // мини-приложение бота: t.me/obmer77_bot/obmer77
 const WL={secret:'',code:'',pin:'',bot:'',err:'',timer:0,busy:false,polling:false};
 const hexOf=buf=>Array.from(new Uint8Array(buf)).map(b=>('0'+b.toString(16)).slice(-2)).join('');
 const pinOf=code=>('000'+(parseInt(String(code).slice(0,8),16)%10000)).slice(-4);
@@ -1446,9 +1447,9 @@ function gateRender(){const on=webGate();document.body.classList.toggle('gate',o
   g.innerHTML='<img src="apple-touch-icon.png" alt=""><h2>Обмер · Тип 13</h2><p class="wsm" style="margin:0">Войдите через Telegram — и здесь появятся все ваши замеры из бота «Обмер».</p>'+
    '<div class="wcard"><div class="wstack" style="margin:0">'+
    (WL.err?'<p class="wsm" style="margin:0;text-align:center">'+WL.err+'</p><button type="button" class="wbtn" data-w="retry">Повторить</button>'
-    :ok?'<a class="wbtn" href="tg://resolve?domain='+wesc(WL.bot)+'&startapp=web_'+WL.code+'">Войти через Telegram</a>'+
+    :ok?'<a class="wbtn" href="tg://resolve?domain='+wesc(WL.bot)+'&appname='+WEB_APPNAME+'&startapp=web_'+WL.code+'">Войти через Telegram</a>'+
       '<div style="text-align:center"><div class="wsm">Код подтверждения</div><div class="wpin">'+WL.pin+'</div><div class="wsm">В Telegram откроется «Обмер» с таким же кодом. Нажмите там «Разрешить вход» и вернитесь сюда — вход произойдёт сам.</div></div>'+
-      '<a class="wsm" style="text-align:center;color:var(--accent)" href="https://t.me/'+wesc(WL.bot)+'?startapp=web_'+WL.code+'" target="_blank" rel="noopener">Telegram не открылся? Нажмите здесь</a>'
+      '<a class="wsm" style="text-align:center;color:var(--accent)" href="https://t.me/'+wesc(WL.bot)+'/'+WEB_APPNAME+'?startapp=web_'+WL.code+'" target="_blank" rel="noopener">Telegram не открылся? Нажмите здесь</a>'
     :'<div class="wsm" style="text-align:center">Готовлю вход…</div>')+
    '</div></div><p class="wsm" style="margin-top:16px"><button type="button" class="wlink" data-w="local">Продолжить без входа</button><br>Тогда замеры будут только в этом браузере.</p>';}
 async function webLoginInit(force){if(WL.busy)return;WL.busy=true;WL.err='';
@@ -1468,6 +1469,8 @@ function wmodal(html){wclose();const el=document.createElement('div');el.classNa
 function wclose(){const el=document.getElementById('wmodal');if(el)el.remove();}
 /* в Telegram: подтверждение входа, который начали в браузере */
 function webApprovePrompt(){if(!TGA||webApprovePrompt.done)return;const sp=String((TGA.initDataUnsafe&&TGA.initDataUnsafe.start_param)||'');const m=sp.match(/^web_([0-9a-f]{16})$/);if(!m)return;webApprovePrompt.done=1;WL.code=m[1];
+  const seen=(wls('obmer-webseen')||'').split(',').filter(Boolean);if(seen.includes(m[1]))return;   // Telegram может повторно открыть «Обмер» с тем же кодом — второй раз не спрашиваем
+  seen.push(m[1]);wlset('obmer-webseen',seen.slice(-10).join(','));
   wmodal('<h3>Вход в браузере</h3><p class="wsm" style="margin:0">«Обмер» открыли в браузере и хотят войти под вашим именем. Если это вы — сверьте код:</p><div class="wpin" style="text-align:center;margin-top:10px">'+pinOf(m[1])+'</div><p class="wsm" style="margin:0">Код должен совпадать с тем, что показан в браузере. Если вы ничего не открывали — нажмите «Отмена».</p>'+
    '<div class="wstack"><button type="button" class="wbtn" data-w="ok">Разрешить вход</button><button type="button" class="wbtn sec" data-w="close">Отмена</button></div>');}
 function openStore(){const url=location.href.split(/[?#]/)[0];let h='<h3>Где хранятся замеры</h3>';
