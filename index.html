@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <title>Приёмка квартиры, Тип 13</title>
+<meta name="apple-mobile-web-app-title" content="Обмер">
+<meta name="application-name" content="Обмер">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="claude:viewport-fit-sides" content="cover">
 <script>try{var t=localStorage.getItem('priemka-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
 <style>
@@ -316,7 +324,27 @@ textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft
 @media (max-width:420px){.fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
-<style>[hidden]{display:none!important}body{margin:0}:root{padding-top:env(safe-area-inset-top,0px)}</style>
+<style>[hidden]{display:none!important}body{margin:0}:root{padding-top:env(safe-area-inset-top,0px)}
+/* вход через Telegram и окно «Хранение» */
+.gate .wrap,.gate .tabbar{display:none!important}
+#status{cursor:pointer;padding:8px 4px;margin:-8px -4px}
+.wgate{max-width:440px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 40px) 18px 40px;text-align:center}
+.wgate img{width:88px;height:88px;border-radius:21px;display:block;margin:0 auto 14px;box-shadow:0 10px 24px -12px var(--glow)}
+.wgate h2{margin:0 0 6px;font-size:24px}
+.wcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;margin-top:16px;text-align:left}
+.wbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;border-radius:15px;font-weight:700;font-size:15.5px;color:#fff;background:linear-gradient(140deg,var(--grad-a),var(--grad-b));box-shadow:0 10px 22px -12px var(--glow);text-align:center;text-decoration:none}
+.wbtn.sec{color:var(--txt);background:var(--field);border:1px solid var(--line);box-shadow:none;font-weight:600}
+.wbtn[disabled]{opacity:.6}
+.wpin{font-size:38px;font-weight:700;letter-spacing:.18em;margin:2px 0 6px;font-variant-numeric:tabular-nums}
+.wsm{font-size:13px;color:var(--txt-2)} .wsm b{color:var(--txt)}
+.wlink{all:unset;cursor:pointer;color:var(--accent);text-decoration:underline;font:inherit}
+.wmodal{position:fixed;inset:0;z-index:95;background:rgba(5,8,14,.5);display:flex;align-items:flex-end;justify-content:center}
+.wmodal-in{background:var(--surface-solid);border:1px solid var(--line);border-radius:22px 22px 0 0;max-width:520px;width:100%;padding:20px 18px calc(22px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow:auto}
+.wmodal-in h3{margin:0 0 10px;font-size:18px}
+.wmodal-in ol{margin:6px 0 0;padding-left:20px} .wmodal-in li{margin:4px 0}
+.wstack{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+@media (min-width:700px){.wmodal{align-items:center}.wmodal-in{border-radius:22px}}
+</style>
 </head>
 <body>
 
@@ -394,6 +422,7 @@ textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft
             <button type="button" class="secondary-btn" id="bBackup" hidden>Сохранить файл с замерами</button>
             <label class="secondary-btn" for="fImport">Загрузить из файла</label><input type="file" id="fImport" accept=".json,application/json" hidden>
             <button type="button" class="secondary-btn" id="bCsv" hidden>Скачать CSV</button>
+            <button type="button" class="secondary-btn" id="bStore">Хранение и значок «Домой»</button>
           </div>
           <div class="status" id="toast" role="status"></div>
         </div>
@@ -574,7 +603,7 @@ const FLOOR=CORN.map(([n,l])=>['fl'+n,l]);
 const WALLQ=[['wv','Отклонение от вертикали, макс.'],['wf','Неровность под правилом 2 м']];
 
 /* ---------- Состояние ---------- */
-const S={vals:{},notes:{},custom:{},pending:{},timers:{},writing:{},db:null,tg:false,mode:'init',dl:null,active:null,view:'all',layer:'dims'};
+const S={at:{},vals:{},notes:{},custom:{},pending:{},timers:{},writing:{},db:null,tg:false,mode:'init',dl:null,active:null,view:'all',layer:'dims'};
 ROOMS.forEach(r=>{S.vals[r.id]={};S.notes[r.id]='';S.custom[r.id]=[];});
 const roomById=id=>ROOMS.find(r=>r.id===id);
 const projOf=r=>{const v=num(S.vals[r.id].projA);return v!=null?v/100:r.proj;};
@@ -916,24 +945,28 @@ function bodyOf(rid){return {values:Object.assign({},S.vals[rid]),note:S.notes[r
 async function save(rid){
   if(S.writing[rid]){S.timers[rid]=setTimeout(()=>save(rid),400);return;}
   const body=bodyOf(rid);S.writing[rid]=true;
-  try{saveLocal();if(S.db)await S.db.doc('rooms/'+rid).set(body);else if(S.tg)await tgSet(rid,body);S.pending[rid]=false;}
+  S.at[rid]=body.updatedAt;
+  try{saveLocal();if(S.db)await S.db.doc('rooms/'+rid).set(body);
+    else{if(S.tg){try{await tgSet(rid,body);}catch(e){if(!SV.on)throw e;}}if(SV.on)await srvPut(rid,body);}
+    S.pending[rid]=false;}
   catch(err){if(err&&err.code==='unavailable'){S.writing[rid]=false;setTimeout(()=>save(rid),800+Math.random()*600);return;}S.mode='err';S.pending[rid]=false;}
   finally{S.writing[rid]=false;setStatus();}
 }
-function saveLocal(){try{localStorage.setItem('priemka-t13',JSON.stringify({vals:S.vals,notes:S.notes,custom:S.custom,at:new Date().toISOString()}));}catch(e){}}
+function saveLocal(){try{localStorage.setItem('priemka-t13',JSON.stringify({vals:S.vals,notes:S.notes,custom:S.custom,ats:S.at,at:new Date().toISOString()}));}catch(e){}}
 function cleanCustom(a){return Array.isArray(a)?a.filter(o=>o&&typeof o.id==='string'&&/^c[a-z0-9]{1,20}$/.test(o.id)&&TYPES[o.type]&&o.type!=='shaft').map(o=>{const x={id:o.id,type:o.type,name:typeof o.name==='string'?o.name.slice(0,80):''};if(isFinite(o.px)&&isFinite(o.py)){x.px=Math.round(o.px);x.py=Math.round(o.py);}return x;}):[];}
 function applyRoom(rid,b){
   if(!b||typeof b!=='object')return;
   S.custom[rid]=cleanCustom(b.openings);
   const v={};const src=b.values||{};for(const k in src){const x=Number(src[k]);if(isFinite(x)&&/^[A-Za-z0-9_]{1,40}$/.test(k))v[k]=Math.round(x);}
-  S.vals[rid]=v;S.notes[rid]=typeof b.note==='string'?b.note:'';
+  S.vals[rid]=v;S.notes[rid]=typeof b.note==='string'?b.note:'';S.at[rid]=typeof b.updatedAt==='string'?b.updatedAt:'';
 }
-function loadLocal(){try{const j=JSON.parse(localStorage.getItem('priemka-t13')||'null');if(j)ROOMS.forEach(r=>applyRoom(r.id,{values:j.vals&&j.vals[r.id],note:j.notes&&j.notes[r.id],openings:j.custom&&j.custom[r.id]}));}catch(e){}}
+function loadLocal(){try{const j=JSON.parse(localStorage.getItem('priemka-t13')||'null');if(j)ROOMS.forEach(r=>applyRoom(r.id,{values:j.vals&&j.vals[r.id],note:j.notes&&j.notes[r.id],openings:j.custom&&j.custom[r.id],updatedAt:j.ats&&j.ats[r.id]}));}catch(e){}}
 function afterLoad(){if(sigOf()!==lastSig)structureChanged();else{recompute();refreshInputs(false);refreshDerived();}}
 function setStatus(){
   const st=document.getElementById('status');const busy=Object.values(S.pending).some(Boolean);const m=S.mode;
   st.className='save '+((m==='cloud'||m==='tg')?'cloud':m==='local'?'local':m==='err'?'err':'');
-  const txt=busy?'Сохраняю…':m==='tg'?'Сохранено в Telegram':m==='cloud'?'Сохранено в облаке':m==='local'?'Сохранено в браузере':m==='err'?'Облако недоступно':'Подключаю хранилище…';
+  const dirty=SV.on&&Object.keys(SV.dirty).length;if(m==='srv')st.className='save '+(dirty?'local':'cloud');
+  const txt=busy?'Сохраняю…':m==='srv'?(dirty?'Нет связи — сохранено на телефоне':'Сохранено на сервере'):m==='tg'?'Сохранено в Telegram':m==='cloud'?'Сохранено в облаке':m==='local'?'Сохранено в браузере':m==='err'?'Облако недоступно':'Подключаю хранилище…';
   st.lastChild.textContent=txt;st.title=txt;
 }
 
@@ -1364,6 +1397,99 @@ async function startTg(){
     afterLoad();}
 }
 
+/* ---------- Сервер «Обмера» и вход в браузере через Telegram ----------
+   В Telegram замеры по-прежнему пишутся и в облако Telegram (запасная копия), и на сервер.
+   В браузере (значок на экране «Домой») — на сервер после входа через Telegram. */
+const SYNC_URL='https://script.google.com/macros/s/AKfycbxmRZ8en5tzIkbOwHbD_kEpJkf0s3iOJPBJn0fidTg5Z0_C-oWoWlLGt6RUQQVBz4yPdA/exec';
+const HAS_SRV=!!SYNC_URL&&SYNC_URL.indexOf('%%')!==0;
+const wls=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+const wlset=(k,v)=>{try{if(v)localStorage.setItem(k,v);else localStorage.removeItem(k);}catch(e){}};
+const wesc=x=>String(x==null?'':x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let WEBTOK=(!TGA&&wls('obmer-webtok'))||'';
+const IMPORTING=location.hash.indexOf('#import=')===0;
+const WEB_OK=!TGA&&STANDALONE&&/^https?:$/.test(location.protocol)&&HAS_SRV;
+const webGate=()=>WEB_OK&&!WEBTOK&&!IMPORTING&&wls('obmer-weblocal')!=='1';
+const SV={on:false,me:null,bot:'',dirty:{},err:'',pulling:false,retry:0};
+async function api(op,data){
+  const r=await fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({op,initData:TGA?TGA.initData:'',token:TGA?undefined:(WEBTOK||undefined)},data||{}))});
+  const j=await r.json();if(!j.ok){if(j.err==='auth'&&!TGA&&WEBTOK&&op!=='web_start'&&op!=='web_poll'){webWipe();location.reload();}const e=new Error(j.err||'fail');e.code=j.err;throw e;}return j;}
+const emptyBody=b=>!b||(!Object.keys(b.values||{}).length&&!String(b.note||'').trim()&&!(b.openings||[]).length);
+const emptyRoom=rid=>!Object.keys(S.vals[rid]||{}).length&&!String(S.notes[rid]||'').trim()&&!(S.custom[rid]||[]).length;
+/* сверка с сервером: берём более свежую версию комнаты; пустая версия никогда не затирает заполненную */
+function mergeRooms(rooms,first){let changed=false;
+  ROOMS.forEach(r=>{const rid=r.id;const b=rooms[rid];if(S.pending[rid]||S.writing[rid])return;
+    const la=S.at[rid]||'',lb=emptyRoom(rid),sa=b&&typeof b.updatedAt==='string'?b.updatedAt:'';
+    if(emptyBody(b)){if(!lb&&first)SV.dirty[rid]=1;return;}
+    if(lb||sa>la){applyRoom(rid,b);changed=true;if(S.tg)tgSet(rid,b).catch(()=>{});}
+    else if(first&&la>sa)SV.dirty[rid]=1;});
+  if(changed){saveLocal();afterLoad();}}
+async function srvPut(rid,body){
+  try{await api('put',{rid,body});delete SV.dirty[rid];SV.err='';}
+  catch(e){SV.dirty[rid]=1;SV.err=e.code||'net';if(e.code==='too_big')toast('Заметка слишком длинная для сервера — сократите её.');clearTimeout(SV.retry);SV.retry=setTimeout(flushDirty,8000);}}
+async function flushDirty(){const ks=Object.keys(SV.dirty).filter(k=>!S.pending[k]&&!S.writing[k]);if(!SV.on||!ks.length){setStatus();return;}
+  try{await api('put',{docs:ks.map(rid=>{const b=bodyOf(rid);S.at[rid]=b.updatedAt;return {rid,body:b};})});ks.forEach(k=>delete SV.dirty[k]);saveLocal();SV.err='';}
+  catch(e){SV.err=e.code||'net';clearTimeout(SV.retry);SV.retry=setTimeout(flushDirty,8000);}setStatus();}
+async function srvConnect(){if(!HAS_SRV||!(TGA||WEBTOK))return;
+  try{const h=await api('hello');SV.me=h.you;SV.bot=h.bot||'';mergeRooms(h.rooms||{},true);SV.on=true;S.mode='srv';SV.err='';setStatus();flushDirty();webApprovePrompt();
+    if(!SV.iv){SV.iv=setInterval(()=>{if(!document.hidden)srvPull();},30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)srvPull();});}}
+  catch(e){SV.err=e.code||'net';if(!S.tg)S.mode=e.code==='full'?'local':'err';setStatus();if(e.code==='full')toast('На сервере «Обмера» больше нет мест для новых людей.');else if(!SV.again){SV.again=setTimeout(()=>{SV.again=0;if(!SV.on)srvConnect();},15000);}}}
+async function srvPull(){if(!SV.on||SV.pulling)return;SV.pulling=true;try{const r=await api('pull');mergeRooms(r.rooms||{},false);if(Object.keys(SV.dirty).length)flushDirty();}catch(e){}SV.pulling=false;}
+
+const WL={secret:'',code:'',pin:'',bot:'',err:'',timer:0,busy:false,polling:false};
+const hexOf=buf=>Array.from(new Uint8Array(buf)).map(b=>('0'+b.toString(16)).slice(-2)).join('');
+const pinOf=code=>('000'+(parseInt(String(code).slice(0,8),16)%10000)).slice(-4);
+function webUA(){const u=navigator.userAgent||'';return (/iPhone/.test(u)?'iPhone':/iPad/.test(u)?'iPad':/Android/.test(u)?'Android':/Mac/.test(u)?'Mac':/Windows/.test(u)?'Windows':'Браузер');}
+function webWipe(){try{Object.keys(localStorage).forEach(k=>{if(k!=='priemka-theme')localStorage.removeItem(k);});}catch(e){}WEBTOK='';}
+function gateRender(){const on=webGate();document.body.classList.toggle('gate',on);let g=document.getElementById('wgate');
+  if(!on){if(g)g.remove();return;}if(!g){g=document.createElement('div');g.id='wgate';g.className='wgate';document.body.appendChild(g);}
+  if(!WL.secret&&!WL.busy&&!WL.err)setTimeout(()=>webLoginInit(),0);const ok=WL.bot&&WL.code&&!WL.err;
+  g.innerHTML='<img src="apple-touch-icon.png" alt=""><h2>Обмер · Тип 13</h2><p class="wsm" style="margin:0">Войдите через Telegram — и здесь появятся все ваши замеры из бота «Обмер».</p>'+
+   '<div class="wcard"><div class="wstack" style="margin:0">'+
+   (WL.err?'<p class="wsm" style="margin:0;text-align:center">'+WL.err+'</p><button type="button" class="wbtn" data-w="retry">Повторить</button>'
+    :ok?'<a class="wbtn" href="tg://resolve?domain='+wesc(WL.bot)+'&startapp=web_'+WL.code+'">Войти через Telegram</a>'+
+      '<div style="text-align:center"><div class="wsm">Код подтверждения</div><div class="wpin">'+WL.pin+'</div><div class="wsm">В Telegram откроется «Обмер» с таким же кодом. Нажмите там «Разрешить вход» и вернитесь сюда — вход произойдёт сам.</div></div>'+
+      '<a class="wsm" style="text-align:center;color:var(--accent)" href="https://t.me/'+wesc(WL.bot)+'?startapp=web_'+WL.code+'" target="_blank" rel="noopener">Telegram не открылся? Нажмите здесь</a>'
+    :'<div class="wsm" style="text-align:center">Готовлю вход…</div>')+
+   '</div></div><p class="wsm" style="margin-top:16px"><button type="button" class="wlink" data-w="local">Продолжить без входа</button><br>Тогда замеры будут только в этом браузере.</p>';}
+async function webLoginInit(force){if(WL.busy)return;WL.busy=true;WL.err='';
+  try{let sv=null;try{sv=JSON.parse(wls('obmer-weblogin')||'null');}catch(e){}
+    if(!force&&sv&&sv.secret&&Date.now()-sv.at<13*60000){WL.secret=sv.secret;WL.code=sv.code;}
+    else{const b=new Uint8Array(32);crypto.getRandomValues(b);WL.secret=hexOf(b);WL.code=hexOf(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(WL.secret))).slice(0,16);wlset('obmer-weblogin',JSON.stringify({secret:WL.secret,code:WL.code,at:Date.now()}));}
+    WL.pin=pinOf(WL.code);const r=await api('web_start',{code:WL.code});WL.bot=r.bot||'';
+  }catch(e){WL.err=e&&(e.code==='bad_op'||e.code==='auth')?'Сервер ещё не обновлён.':'Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.';}
+  WL.busy=false;gateRender();
+  if(!WL.timer){WL.timer=setInterval(()=>{if(!document.hidden)webLoginPoll();},2500);document.addEventListener('visibilitychange',()=>{if(!document.hidden)webLoginPoll();});}}
+async function webLoginPoll(){if(!webGate()||!WL.secret||WL.polling||WL.err)return;WL.polling=true;
+  try{const r=await api('web_poll',{secret:WL.secret,ua:webUA()});
+    if(r.token){wlset('obmer-webtok',r.token);wlset('obmer-weblogin','');wlset('obmer-weblocal','');location.reload();return;}
+    if(r.pending&&!r.alive){WL.polling=false;await webLoginInit(true);return;}
+  }catch(e){}WL.polling=false;}
+function wmodal(html){wclose();const el=document.createElement('div');el.className='wmodal';el.id='wmodal';el.innerHTML='<div class="wmodal-in" role="dialog" aria-modal="true">'+html+'</div>';document.body.appendChild(el);return el;}
+function wclose(){const el=document.getElementById('wmodal');if(el)el.remove();}
+/* в Telegram: подтверждение входа, который начали в браузере */
+function webApprovePrompt(){if(!TGA||webApprovePrompt.done)return;const sp=String((TGA.initDataUnsafe&&TGA.initDataUnsafe.start_param)||'');const m=sp.match(/^web_([0-9a-f]{16})$/);if(!m)return;webApprovePrompt.done=1;WL.code=m[1];
+  wmodal('<h3>Вход в браузере</h3><p class="wsm" style="margin:0">«Обмер» открыли в браузере и хотят войти под вашим именем. Если это вы — сверьте код:</p><div class="wpin" style="text-align:center;margin-top:10px">'+pinOf(m[1])+'</div><p class="wsm" style="margin:0">Код должен совпадать с тем, что показан в браузере. Если вы ничего не открывали — нажмите «Отмена».</p>'+
+   '<div class="wstack"><button type="button" class="wbtn" data-w="ok">Разрешить вход</button><button type="button" class="wbtn sec" data-w="close">Отмена</button></div>');}
+function openStore(){const url=location.href.split(/[?#]/)[0];let h='<h3>Где хранятся замеры</h3>';
+  if(TGA&&SV.on){h+='<p class="wsm" style="margin:0">На сервере «Обмера» и в облаке Telegram (запасная копия). Видны в Telegram и на значке на экране «Домой».</p>'+
+     '<p class="wsm" style="margin:12px 0 0"><b>Значок на экране «Домой»</b></p><ol class="wsm"><li>Откройте в Safari ссылку <button type="button" class="wlink" data-w="copy">скопировать</button><br>'+wesc(url.replace(/^https?:\/\//,''))+'</li><li>«Поделиться» → «На экран „Домой“».</li><li>Откройте значок и нажмите «Войти через Telegram».</li></ol><div id="wsess"></div>';}
+  else if(TGA)h+='<p class="wsm" style="margin:0">'+(HAS_SRV?'В облаке Telegram. Сервер сейчас недоступен — замеры отправятся на него, когда появится связь.':'В облаке Telegram.')+'</p>';
+  else if(WEBTOK)h+='<p class="wsm" style="margin:0">На сервере «Обмера». Вы вошли как <b>'+wesc((SV.me&&SV.me.name)||'…')+'</b> — замеры те же, что в Telegram.</p><div class="wstack"><button type="button" class="wbtn sec" data-w="logout">Выйти на этом устройстве</button></div>';
+  else h+='<p class="wsm" style="margin:0">Только в этом браузере.</p>'+(WEB_OK?'<div class="wstack"><button type="button" class="wbtn" data-w="login">Войти через Telegram</button></div>':'');
+  wmodal(h+'<div class="wstack"><button type="button" class="wbtn sec" data-w="close">Закрыть</button></div>');
+  if(TGA&&SV.on)api('web_list').then(r=>{const ss=r.sessions||[];const b=document.getElementById('wsess');if(b&&ss.length)b.innerHTML='<p class="wsm" style="margin:10px 0 0">Вход выполнен: '+ss.map(x=>wesc(x.ua||'устройство')+' · '+new Date(x.at).toLocaleDateString('ru-RU',{day:'numeric',month:'short'}).replace(/\.$/,'')).join(', ')+'.</p><div class="wstack"><button type="button" class="wbtn sec" data-w="revoke">Выйти на всех устройствах</button></div>';}).catch(()=>{});}
+document.getElementById('status').addEventListener('click',openStore);document.getElementById('bStore').addEventListener('click',openStore);
+document.addEventListener('click',e=>{const b=e.target.closest('[data-w]');if(!b)return;const a=b.dataset.w;
+  if(a==='close'){wclose();}
+  else if(a==='retry'){WL.err='';WL.secret='';gateRender();}
+  else if(a==='local'){wlset('obmer-weblocal','1');gateRender();}
+  else if(a==='login'){wclose();wlset('obmer-weblocal','');gateRender();}
+  else if(a==='copy'){const url=location.href.split(/[?#]/)[0];(navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Ссылка скопирована.')).catch(()=>toast(url));}
+  else if(a==='ok'){b.disabled=true;api('web_approve',{code:WL.code}).then(()=>{wclose();toast('Готово. Вернитесь в браузер — «Обмер» откроется сам.');}).catch(e=>{b.disabled=false;toast(e.code==='expired'?'Код устарел. В браузере нажмите «Войти через Telegram» ещё раз.':'Не получилось — проверьте интернет.');});}
+  else if(a==='logout'){api('web_revoke',{self:true}).catch(()=>{}).then(()=>{webWipe();location.reload();});}
+  else if(a==='revoke'){api('web_revoke',{all:true}).then(()=>{wclose();toast('Готово: вход в браузере закрыт на всех устройствах.');}).catch(()=>toast('Не получилось — проверьте интернет.'));}
+});
+
 /* ---------- Старт ---------- */
 drawStatic();buildChips();buildRooms();
 loadLocal();structureChanged();
@@ -1371,7 +1497,8 @@ setStatus();setTab('plan');importFromHash();
 window.addEventListener('load',sizePlan);
 if(STANDALONE&&!TGA){document.getElementById('bCsv').hidden=false;document.getElementById('bBackup').hidden=false;}
 const cl=window.claude;
-if(TGA){startTg();}
+if(TGA){startTg().then(srvConnect,srvConnect);}
+else if(WEBTOK){S.mode='local';setStatus();srvConnect();}
 else if(cl&&cl.use){
   cl.use('downloads').then(dl=>{if(dl){S.dl=dl;document.getElementById('bCsv').hidden=false;document.getElementById('bBackup').hidden=false;}}).catch(()=>{});
   cl.use('db').then(db=>{
@@ -1383,7 +1510,7 @@ else if(cl&&cl.use){
       afterLoad();
     },()=>{S.mode='err';S.db=null;setStatus();});
   }).catch(()=>{S.mode='local';setStatus();});
-}else{S.mode='local';setStatus();}
+}else{S.mode='local';setStatus();gateRender();}
 })();
 </script>
 
