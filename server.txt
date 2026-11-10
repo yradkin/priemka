@@ -1,0 +1,204 @@
+/**
+ * «Обмер · 77» — сервер замеров для приёмки квартиры (Google Apps Script).
+ *
+ * Что делает:
+ *  - хранит замеры каждого человека отдельно (по его Telegram id) — как раньше облако Telegram;
+ *  - одни и те же замеры видны и в Telegram, и в браузере (значок на экране «Домой»);
+ *  - для каждой комнаты хранит и предыдущую версию (на случай ошибки);
+ *  - каждый запрос проверяется по подписи Telegram (initData) с помощью токена бота,
+ *    а в браузере — по ключу входа, который выдаётся только после подтверждения в Telegram.
+ *
+ * Настройка (один раз):
+ *  1. Настройки проекта (шестерёнка) → Свойства скрипта → добавить свойство
+ *     BOT_TOKEN = токен бота «Обмер • 77» из @BotFather.
+ *  2. «Начать развёртывание» → «Новое развёртывание» → тип «Веб-приложение»:
+ *     Запуск от имени: «Я», У кого есть доступ: «Все». Разрешить доступ. Скопировать URL веб-приложения.
+ *
+ * Полезные функции (выбрать в списке и нажать «Выполнить»):
+ *  showRooms — показать в журнале, у кого сколько комнат заполнено;
+ *  undoLastSave — вернуть предыдущую версию всех комнат (если что-то случайно стёрлось).
+ */
+const SERVER_VERSION = 1;
+const MAX_AGE_SEC = 30 * 24 * 3600;   // сколько живёт подпись Telegram
+const MAX_USERS = 8;                  // сколько разных людей может хранить здесь замеры
+const WEB_DAYS = 200;                 // сколько дней действует вход в браузере
+const ROOM_MAX = 8500;                // предел размера одной комнаты, знаков
+
+function doGet() { return out_({ ok: true, app: 'obmer-sync', v: SERVER_VERSION }); }
+
+function doPost(e) {
+  let req;
+  try { req = JSON.parse(e.postData.contents); } catch (err) { return out_({ ok: false, err: 'bad_json' }); }
+  if (req.op === 'web_start' || req.op === 'web_poll') { try { return out_(webLogin_(req)); } catch (err) { return out_({ ok: false, err: 'server', msg: String(err) }); } }
+  const user = auth_(req.initData) || webAuth_(req.token);
+  if (!user) return out_({ ok: false, err: 'auth' });
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(20000);
+    const P = PropertiesService.getScriptProperties();
+    const users = JSON.parse(P.getProperty('USERS') || '[]');
+    let me = users.find(x => x.id === user.id);
+    if (!me) {
+      if (user.web) return out_({ ok: false, err: 'auth' });
+      if (users.length >= MAX_USERS) return out_({ ok: false, err: 'full' });
+      me = { id: user.id, name: user.name, at: Date.now(), owner: !users.length };
+      users.push(me); P.setProperty('USERS', JSON.stringify(users));
+    } else if (!user.web && me.name !== user.name) { me.name = user.name; P.setProperty('USERS', JSON.stringify(users)); }
+
+    if (/^web_(approve|list|revoke)$/.test(req.op)) { try { lock.releaseLock(); } catch (e3) {} return out_(webSessOp_(me, user, req)); }
+
+    if (req.op === 'hello' || req.op === 'pull') {
+      return out_({ ok: true, you: { id: me.id, name: me.name }, rooms: rooms_(P, me.id), bot: req.op === 'hello' ? botName_() : undefined, v: SERVER_VERSION, now: Date.now() });
+    }
+    if (req.op === 'put') {
+      const docs = Array.isArray(req.docs) ? req.docs : [{ rid: req.rid, body: req.body }];
+      if (docs.length > 40) return out_({ ok: false, err: 'too_many' });
+      const all = P.getProperties(); const out = {};
+      for (const d of docs) {
+        const rid = String(d && d.rid || '');
+        if (!/^[a-z0-9_]{1,24}$/.test(rid) || !d.body || typeof d.body !== 'object') return out_({ ok: false, err: 'bad_room' });
+        const s = JSON.stringify(d.body);
+        if (s.length > ROOM_MAX) return out_({ ok: false, err: 'too_big', rid: rid });
+        const k = 'R' + me.id + '_' + rid; const old = all[k];
+        if (old === s) continue;
+        if (old) P.setProperty('P' + me.id + '_' + rid, old);   // предыдущая версия
+        P.setProperty(k, s); out[rid] = 1;
+      }
+      return out_({ ok: true, saved: Object.keys(out), now: Date.now() });
+    }
+    return out_({ ok: false, err: 'bad_op' });
+  } catch (err) {
+    return out_({ ok: false, err: 'server', msg: String(err) });
+  } finally {
+    try { lock.releaseLock(); } catch (e2) {}
+  }
+}
+
+function rooms_(P, id) {
+  const all = P.getProperties(), pre = 'R' + id + '_', o = {};
+  Object.keys(all).forEach(k => { if (k.indexOf(pre) === 0) { try { o[k.slice(pre.length)] = JSON.parse(all[k]); } catch (e) {} } });
+  return o;
+}
+
+/** Показать в журнале, у кого сколько комнат заполнено (данные не меняет). */
+function showRooms() {
+  const P = PropertiesService.getScriptProperties();
+  const users = JSON.parse(P.getProperty('USERS') || '[]');
+  if (!users.length) { Logger.log('Пока никто не сохранял замеры.'); return; }
+  users.forEach(u => {
+    const r = rooms_(P, u.id); const ks = Object.keys(r);
+    const n = ks.reduce((a, k) => a + Object.keys((r[k] && r[k].values) || {}).length, 0);
+    Logger.log(u.name + ' (id ' + u.id + '): комнат ' + ks.length + ', размеров ' + n);
+  });
+}
+
+/** Вернуть предыдущую версию всех комнат у всех (текущая становится «предыдущей» — можно вернуть обратно). */
+function undoLastSave() {
+  const P = PropertiesService.getScriptProperties(); const all = P.getProperties(); let n = 0;
+  Object.keys(all).forEach(k => {
+    if (k[0] !== 'P' || !/^P\d+_/.test(k)) return;
+    const cur = 'R' + k.slice(1); const prev = all[k];
+    let b; try { b = JSON.parse(prev); } catch (e) { return; }
+    b.updatedAt = new Date().toISOString();   // чтобы телефоны приняли версию как новую
+    if (all[cur]) P.setProperty(k, all[cur]);
+    P.setProperty(cur, JSON.stringify(b)); n++;
+  });
+  Logger.log(n ? 'Возвращено комнат: ' + n + '. Откройте приложение заново.' : 'Предыдущих версий пока нет.');
+}
+
+/* ---------- проверка подписи Telegram ---------- */
+function auth_(initData) {
+  if (!initData) return null;
+  const token = PropertiesService.getScriptProperties().getProperty('BOT_TOKEN');
+  if (!token) return null;
+  const params = {};
+  String(initData).split('&').forEach(pair => {
+    const i = pair.indexOf('=');
+    if (i > 0) params[decodeURIComponent(pair.slice(0, i))] = decodeURIComponent(pair.slice(i + 1).replace(/\+/g, '%20'));
+  });
+  const hash = params.hash;
+  if (!hash) return null;
+  const check = Object.keys(params).filter(k => k !== 'hash').sort().map(k => k + '=' + params[k]).join('\n');
+  const secret = Utilities.computeHmacSha256Signature(Utilities.newBlob(token).getBytes(), Utilities.newBlob('WebAppData').getBytes());
+  const sig = Utilities.computeHmacSha256Signature(Utilities.newBlob(check).getBytes(), secret);
+  if (hex_(sig) !== hash) return null;
+  if (Date.now() / 1000 - (+params.auth_date || 0) > MAX_AGE_SEC) return null;
+  let u = {};
+  try { u = JSON.parse(params.user || '{}'); } catch (e) { return null; }
+  if (!u.id) return null;
+  return { id: +u.id, name: [u.first_name, u.last_name].filter(Boolean).join(' ') || ('id' + u.id) };
+}
+
+/* ---------- вход в браузере: «Обмер» как веб-приложение на экране «Домой» ----------
+   Браузер придумывает секрет и показывает ссылку на бота с кодом (код = начало SHA-256 от секрета).
+   Человек открывает ссылку в Telegram и подтверждает вход — там его личность уже проверена подписью Telegram.
+   После этого браузер по своему секрету получает ключ входа. Ключ хранится только на том устройстве; здесь — лишь его отпечаток. */
+function hex_(bytes) { return bytes.map(b => ('0' + ((b + 256) % 256).toString(16)).slice(-2)).join(''); }
+function sha_(str) { return hex_(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(str))); }
+function webSess_() { const raw = PropertiesService.getScriptProperties().getProperty('WEBSESS'); return raw ? JSON.parse(raw) : {}; }
+function saveWebSess_(o) { PropertiesService.getScriptProperties().setProperty('WEBSESS', JSON.stringify(o)); }
+function webAuth_(token) {
+  token = String(token || ''); if (!/^[0-9a-f]{48,80}$/.test(token)) return null;
+  const x = webSess_()[sha_(token).slice(0, 32)];
+  if (!x || Date.now() - (x.at || 0) > WEB_DAYS * 864e5) return null;
+  return { id: x.id, name: x.name, web: true };
+}
+function webLogin_(req) {
+  const c = CacheService.getScriptCache();
+  if (req.op === 'web_start') {
+    const code0 = String(req.code || ''); if (!/^[0-9a-f]{16}$/.test(code0)) return { ok: false, err: 'bad_code' };
+    c.put('ws_' + code0, '1', 900);
+    return { ok: true, bot: botName_() };
+  }
+  const secret = String(req.secret || ''); if (!/^[0-9a-f]{64}$/.test(secret)) return { ok: false, err: 'bad_code' };
+  const code = sha_(secret).slice(0, 16);
+  const hit = c.get('wp_' + code);
+  if (!hit) return { ok: true, pending: true, alive: !!c.get('ws_' + code) };
+  const a = JSON.parse(hit); const token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(20000);
+    const all = webSess_(), now = Date.now();
+    Object.keys(all).forEach(k => { if (now - (all[k].at || 0) > WEB_DAYS * 864e5) delete all[k]; });
+    const byAge = ks => ks.sort((x, y) => (all[x].at || 0) - (all[y].at || 0));
+    const mine = byAge(Object.keys(all).filter(k => all[k].id === a.id)); while (mine.length >= 5) delete all[mine.shift()];   // не больше 5 устройств на человека
+    const rest = byAge(Object.keys(all)); while (rest.length >= 30) delete all[rest.shift()];
+    all[sha_(token).slice(0, 32)] = { id: a.id, name: a.name, at: now, ua: String(req.ua || '').replace(/[^\w .,()А-Яа-яЁё-]/g, '').slice(0, 40) };
+    saveWebSess_(all);
+  } finally { try { lock.releaseLock(); } catch (e) {} }
+  c.remove('wp_' + code); c.remove('ws_' + code);
+  return { ok: true, token: token, user: { id: a.id, name: a.name } };
+}
+function webSessOp_(me, user, req) {
+  if (req.op === 'web_approve') {
+    if (user.web) return { ok: false, err: 'tg_only' };   // подтвердить вход можно только из Telegram
+    const code = String(req.code || ''); if (!/^[0-9a-f]{16}$/.test(code)) return { ok: false, err: 'bad_code' };
+    const c = CacheService.getScriptCache(); if (!c.get('ws_' + code)) return { ok: false, err: 'expired' };
+    c.put('wp_' + code, JSON.stringify({ id: user.id, name: user.name }), 600);
+    return { ok: true };
+  }
+  const list = o => Object.keys(o).filter(k => o[k].id === me.id).map(k => ({ k: k.slice(0, 10), at: o[k].at, ua: o[k].ua || '' })).sort((x, y) => y.at - x.at);
+  if (req.op === 'web_list') return { ok: true, sessions: list(webSess_()) };
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(20000);
+    const all = webSess_(); const cur = req.token ? sha_(String(req.token)).slice(0, 32) : '';
+    Object.keys(all).forEach(k => { if (all[k].id !== me.id) return; if (req.all || (req.k && k.slice(0, 10) === String(req.k)) || (req.self && k === cur)) delete all[k]; });
+    saveWebSess_(all);
+    return { ok: true, sessions: list(all) };
+  } finally { try { lock.releaseLock(); } catch (e) {} }
+}
+
+function botName_() {
+  const p = PropertiesService.getScriptProperties();
+  let n = p.getProperty('BOT_NAME');
+  if (!n) {
+    try {
+      const token = p.getProperty('BOT_TOKEN');
+      const r = JSON.parse(UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/getMe', { muteHttpExceptions: true }).getContentText());
+      n = r && r.result && r.result.username; if (n) p.setProperty('BOT_NAME', n);
+    } catch (e) {}
+  }
+  return n || '';
+}
+function out_(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
