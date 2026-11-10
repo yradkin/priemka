@@ -1409,6 +1409,7 @@ let WEBTOK=(!TGA&&wls('obmer-webtok'))||'';
 const IMPORTING=location.hash.indexOf('#import=')===0;
 const WEB_OK=!TGA&&STANDALONE&&/^https?:$/.test(location.protocol)&&HAS_SRV;
 const webGate=()=>WEB_OK&&!WEBTOK&&!IMPORTING&&wls('obmer-weblocal')!=='1';
+const IOS_TAB=/iPhone|iPad|iPod/.test(navigator.userAgent)&&navigator.standalone!==true&&!(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
 const SV={on:false,me:null,bot:'',dirty:{},err:'',pulling:false,retry:0};
 async function api(op,data){
   const r=await fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({op,initData:TGA?TGA.initData:'',token:TGA?undefined:(WEBTOK||undefined)},data||{}))});
@@ -1443,6 +1444,9 @@ function webUA(){const u=navigator.userAgent||'';return (/iPhone/.test(u)?'iPhon
 function webWipe(){try{Object.keys(localStorage).forEach(k=>{if(k!=='priemka-theme')localStorage.removeItem(k);});}catch(e){}WEBTOK='';}
 function gateRender(){const on=webGate();document.body.classList.toggle('gate',on);let g=document.getElementById('wgate');
   if(!on){if(g)g.remove();return;}if(!g){g=document.createElement('div');g.id='wgate';g.className='wgate';document.body.appendChild(g);}
+  if(IOS_TAB&&wls('obmer-webtab')!=='1'){g.innerHTML='<img src="apple-touch-icon.png" alt=""><h2>Обмер · Тип 13</h2><p class="wsm" style="margin:0">Поставьте «Обмер» значком на экран — и открывайте его как обычное приложение.</p>'+
+    '<div class="wcard"><ol class="wsm" style="margin:0;padding-left:20px;line-height:1.7"><li>Внизу Safari нажмите «Поделиться» — квадрат со стрелкой вверх.</li><li>Выберите «На экран „Домой“» → «Добавить».</li><li>Откройте новый значок и там нажмите «Войти через Telegram».</li></ol><p class="wsm" style="margin:10px 0 0">Входить нужно именно из значка: iPhone хранит вход значка и Safari отдельно.</p></div>'+
+    '<p class="wsm" style="margin-top:16px"><button type="button" class="wlink" data-w="tab">Войти здесь, в Safari</button></p>';return;}
   if(!WL.secret&&!WL.busy&&!WL.err)setTimeout(()=>webLoginInit(),0);const ok=WL.bot&&WL.code&&!WL.err;
   g.innerHTML='<img src="apple-touch-icon.png" alt=""><h2>Обмер · Тип 13</h2><p class="wsm" style="margin:0">Войдите через Telegram — и здесь появятся все ваши замеры из бота «Обмер».</p>'+
    '<div class="wcard"><div class="wstack" style="margin:0">'+
@@ -1486,6 +1490,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-w]');if(!b
   if(a==='close'){wclose();}
   else if(a==='retry'){WL.err='';WL.secret='';gateRender();}
   else if(a==='local'){wlset('obmer-weblocal','1');gateRender();}
+  else if(a==='tab'){wlset('obmer-webtab','1');gateRender();}
   else if(a==='login'){wclose();wlset('obmer-weblocal','');gateRender();}
   else if(a==='copy'){const url=location.href.split(/[?#]/)[0];(navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Ссылка скопирована.')).catch(()=>toast(url));}
   else if(a==='ok'){b.disabled=true;api('web_approve',{code:WL.code}).then(()=>{wclose();toast('Готово. Вернитесь в браузер — «Обмер» откроется сам.');}).catch(e=>{b.disabled=false;toast(e.code==='expired'?'Код устарел. В браузере нажмите «Войти через Telegram» ещё раз.':'Не получилось — проверьте интернет.');});}
