@@ -14,15 +14,21 @@
  *  2. «Начать развёртывание» → «Новое развёртывание» → тип «Веб-приложение»:
  *     Запуск от имени: «Я», У кого есть доступ: «Все». Разрешить доступ. Скопировать URL веб-приложения.
  *
+ * С версии 2 здесь же хранится проект «Ремонт · Тип 13» (отделка, двери, раскладка),
+ * а фото своих образцов — в папке Google Диска «Обмер — образцы ремонта». После обновления кода
+ * Google один раз спросит доступ к Диску — нужно разрешить.
+ *
  * Полезные функции (выбрать в списке и нажать «Выполнить»):
  *  showRooms — показать в журнале, у кого сколько комнат заполнено;
  *  undoLastSave — вернуть предыдущую версию всех комнат (если что-то случайно стёрлось).
  */
-const SERVER_VERSION = 1;
+const SERVER_VERSION = 2;
 const MAX_AGE_SEC = 30 * 24 * 3600;   // сколько живёт подпись Telegram
 const MAX_USERS = 8;                  // сколько разных людей может хранить здесь замеры
 const WEB_DAYS = 200;                 // сколько дней действует вход в браузере
 const ROOM_MAX = 8500;                // предел размера одной комнаты, знаков
+const PROJ_MAX = 160000;              // предел проекта «Ремонта», знаков (хранится кусками по 8000)
+const IMG_MAX = 3000000;              // предел одной картинки образца, знаков
 
 function doGet() { return out_({ ok: true, app: 'obmer-sync', v: SERVER_VERSION }); }
 
@@ -66,6 +72,45 @@ function doPost(e) {
       }
       return out_({ ok: true, saved: Object.keys(out), now: Date.now() });
     }
+    /* ---------- «Ремонт»: проект и образцы ---------- */
+    if (req.op === 'rget') {
+      const meta = JSON.parse(P.getProperty('XM' + me.id) || 'null');
+      if (!meta) return out_({ ok: true, at: 0, doc: null });
+      if (req.at && +req.at >= meta.at) return out_({ ok: true, at: meta.at, same: true });
+      let raw = ''; for (let i = 0; i < meta.n; i++) raw += P.getProperty('X' + me.id + '_' + i) || '';
+      let doc = null; try { doc = JSON.parse(raw); } catch (e) {}
+      return out_({ ok: true, at: meta.at, doc: doc });
+    }
+    if (req.op === 'rput') {
+      if (!req.doc || typeof req.doc !== 'object') return out_({ ok: false, err: 'bad_doc' });
+      const raw = JSON.stringify(req.doc); if (raw.length > PROJ_MAX) return out_({ ok: false, err: 'too_big' });
+      const old = JSON.parse(P.getProperty('XM' + me.id) || 'null');
+      if (old && req.base != null && +req.base < old.at && !req.force) return out_({ ok: false, err: 'conflict', at: old.at });
+      const n = Math.ceil(raw.length / 8000) || 1, at = Date.now(), props = {};
+      for (let i = 0; i < n; i++) props['X' + me.id + '_' + i] = raw.slice(i * 8000, (i + 1) * 8000);
+      props['XM' + me.id] = JSON.stringify({ n: n, at: at });
+      P.setProperties(props);
+      if (old) for (let i = n; i < old.n; i++) P.deleteProperty('X' + me.id + '_' + i);
+      return out_({ ok: true, at: at });
+    }
+    if (req.op === 'rimg_put' || req.op === 'rimg_get' || req.op === 'rimg_del') {
+      try { lock.releaseLock(); } catch (e4) {}
+      const f = folder_();
+      if (req.op === 'rimg_put') {
+        const mid = String(req.mid || ''); if (!/^[a-z0-9]{2,24}$/.test(mid)) return out_({ ok: false, err: 'bad_id' });
+        const data = String(req.data || ''); if (!/^data:image\/(jpeg|png|webp);base64,/.test(data) || data.length > IMG_MAX) return out_({ ok: false, err: 'bad_img' });
+        const name = 'u' + me.id + '_' + mid + '.txt', it = f.getFilesByName(name);
+        if (it.hasNext()) it.next().setContent(data); else f.createFile(name, data, MimeType.PLAIN_TEXT);
+        return out_({ ok: true });
+      }
+      if (req.op === 'rimg_get') {
+        const ids = (Array.isArray(req.mids) ? req.mids : []).slice(0, 6), out = {};
+        ids.forEach(mid => { if (!/^[a-z0-9]{2,24}$/.test(String(mid))) return; const it = f.getFilesByName('u' + me.id + '_' + mid + '.txt'); if (it.hasNext()) out[mid] = it.next().getBlob().getDataAsString(); });
+        return out_({ ok: true, imgs: out });
+      }
+      const it = f.getFilesByName('u' + me.id + '_' + String(req.mid || '') + '.txt'); while (it.hasNext()) it.next().setTrashed(true);
+      return out_({ ok: true });
+    }
     return out_({ ok: false, err: 'bad_op' });
   } catch (err) {
     return out_({ ok: false, err: 'server', msg: String(err) });
@@ -73,6 +118,14 @@ function doPost(e) {
     try { lock.releaseLock(); } catch (e2) {}
   }
 }
+
+function folder_() {
+  const P = PropertiesService.getScriptProperties(), id = P.getProperty('MFOLDER');
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) {} }
+  const f = DriveApp.createFolder('Обмер — образцы ремонта'); P.setProperty('MFOLDER', f.getId()); return f;
+}
+/** Один раз выполнить после обновления кода, чтобы Google выдал доступ к Диску для образцов. */
+function setupDrive() { Logger.log('Папка для образцов: ' + folder_().getUrl()); }
 
 function rooms_(P, id) {
   const all = P.getProperties(), pre = 'R' + id + '_', o = {};

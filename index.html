@@ -355,6 +355,7 @@ textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft
       <span><b>Приёмка квартиры</b><small>Тип 13 · 3 комнаты</small></span>
     </div>
     <div class="tb-right">
+      <button type="button" class="iconbtn" id="b3d" aria-label="Открыть в 3D: отделка и раскладка" title="Открыть в 3D: отделка и раскладка"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg></button>
       <span class="save" id="status"><span class="dot"></span><span>Подключаю хранилище…</span></span>
       <button type="button" class="iconbtn" id="themeBtn" aria-label="Сменить тему" title="Сменить тему">
         <svg class="ic-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
@@ -1502,6 +1503,14 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-w]');if(!b
 drawStatic();buildChips();buildRooms();
 loadLocal();structureChanged();
 setStatus();setTab('plan');importFromHash();
+/* связка с «Ремонтом»: ссылка сразу на комнату (t.me/…?startapp=room_r14 или #room=r14) и кнопка 3D */
+function deepRoom(){let rid='',m=String((TGA&&TGA.initDataUnsafe&&TGA.initDataUnsafe.start_param)||'').match(/^room_([a-z0-9]+)$/);
+  if(m)rid=m[1];else{m=location.hash.match(/^#room=([a-z0-9]+)/);if(m)rid=m[1];}
+  if(!rid||!roomById(rid)||deepRoom.done===rid)return;deepRoom.done=rid;
+  setView(rid);if(mq.matches)setTab('rooms');const det=document.getElementById('room-'+rid);if(det){det.open=true;setTimeout(()=>det.scrollIntoView({block:'start',behavior:'smooth'}),300);}}
+deepRoom();window.addEventListener('hashchange',()=>{deepRoom.done='';deepRoom();});
+document.getElementById('b3d').addEventListener('click',()=>{const u='https://yradkin.github.io/remont/'+(S.view&&S.view!=='all'?'#room='+S.view:'');
+  try{if(TGA){TGA.openLink(u);return;}}catch(e){}window.open(u,'_blank','noopener');});
 window.addEventListener('load',sizePlan);
 if(STANDALONE&&!TGA){document.getElementById('bCsv').hidden=false;document.getElementById('bBackup').hidden=false;}
 const cl=window.claude;
