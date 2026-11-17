@@ -458,7 +458,7 @@ textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft
     <button type="button" class="iconbtn" id="shClose" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
   <div class="sh-row">
-    <div class="sh-dz">эскиз <b id="shDz"></b></div>
+    <div class="sh-dz"><span id="shDzL">эскиз</span> <b id="shDz"></b></div>
     <input id="shIn" type="number" inputmode="numeric" min="0" step="1" placeholder="мм" autocomplete="off" aria-label="Фактический размер, мм">
     <span class="delta" id="shDl"></span>
   </div>
@@ -615,6 +615,10 @@ let shKey=null,lastSig='',tab='plan';
 let FOLDS={};try{FOLDS=JSON.parse(localStorage.getItem('priemka-folds-v1')||'{}')||{};}catch(e){FOLDS={};}
 function saveFolds(){try{localStorage.setItem('priemka-folds-v1',JSON.stringify(FOLDS));}catch(e){}}
 
+/* Техпаспорт БТИ (Гомельское агентство по госрегистрации, 05.11.2026): размеры по умолчанию, пока нет своего замера. */
+const BTI_H=2630;
+const BTI={hall:{Wh:1660,Wh2:2170},kit:{W:3445,L:3175},bal:{W:3050,L:1050},bath:{W:1750,L:2060},r10:{W:3235,L:3130},r14:{W:3140,L:4735},r13:{W:3240,L:4175}};
+const BTI_AREA={hall:12.9,kit:10.9,bal:2.2,wc:1.5,bath:3.0,r10:10.1,r14:14.9,r13:13.5};
 function fields(r){
   const f=[];
   r.dims.forEach(d=>f.push({k:d[0],label:d[1],full:d[1],design:d[2],approx:!!d[7],grp:'dims',pos:dimCenter(d[3],d[4],d[5],d[6])}));
@@ -630,6 +634,9 @@ function fields(r){
     ['d1','d2'].forEach((k,i)=>f.push({k,label:'Диагональ '+(i+1),full:'Диагональ '+(i+1),design:dd,approx:true,grp:'diag'}));}
   HEIGHTS.forEach(h=>f.push({k:h[0],label:h[1],full:'Высота потолка, '+h[1].toLowerCase(),design:null,grp:'h'}));
   WALLQ.concat(r.extra||[]).forEach(h=>f.push({k:h[0],label:h[1],full:h[1],design:null,grp:'walls'}));
+  const B=BTI[r.id]||{};
+  f.forEach(x=>{if(B[x.k]!=null){x.design=B[x.k];x.approx=false;x.bti=true;}else if(x.grp==='h'){x.design=BTI_H;x.approx=false;x.bti=true;}});
+  if(r.diag&&B.W&&B.L){const dd=Math.round(Math.hypot(B.W,B.L));f.forEach(x=>{if(x.grp==='diag'){x.design=dd;x.bti=true;}});}
   return f;
 }
 let FIELDS={},ORDER=[],TOTAL=0;
@@ -732,7 +739,7 @@ function drawDynamic(){
   DOORS.forEach(d=>{const rid=d[4].split('.')[0];const g=el('g',{class:'opn'+(S.active===d[4]?' on':'')+curCls(rid),'data-key':d[4],'data-room':rid},go);el('line',{x1:d[0],y1:d[1],x2:d[2],y2:d[3],class:'hit'},g);el('line',{x1:d[0],y1:d[1],x2:d[2],y2:d[3],class:'door'},g);});
   ROOMS.forEach(r=>{
     if(S.layer==='h'){drawMarkers(r,gd,gl);return;}
-    if(S.layer==='dims'){r.dims.forEach(d=>drawDim(gd,r.id,r.id+'.'+d[0],d[2],val(r.id,d[0]),d[3],d[4],d[5],d[6],d[8],r.name+': '+d[1],false));
+    if(S.layer==='dims'){r.dims.forEach(d=>drawDim(gd,r.id,r.id+'.'+d[0],(BTI[r.id]&&BTI[r.id][d[0]]!=null?BTI[r.id][d[0]]:d[2]),val(r.id,d[0]),d[3],d[4],d[5],d[6],d[8],r.name+': '+d[1],false));
     r.items.forEach(o=>{if(o.dim)drawDim(gd,r.id,r.id+'.'+o.id+'_W',o.design,val(r.id,o.id+'_W'),o.dim[0],o.dim[1],o.dim[2],o.dim[3],o.dim[4],r.name+': '+o.name+', ширина',true);});}
     itemsOf(r).forEach(o=>{
       if(TYPES[o.type].k!=='pt')return;const p=ptPos(r,o);if(!p)return;const key=r.id+'.'+o.id+'_X';
@@ -747,7 +754,7 @@ function drawDynamic(){
     const g=el('g',{class:'rlabel'+curCls(r.id),'data-room':r.id},gl);
     const [x,y]=r.at;el('text',{x,y,class:'n'},g).textContent=r.name;
     const ma=areaOf(r,true),sa=areaOf(r,false);
-    if(r.area)el('text',{x,y:y+28,class:ma!=null?'am':'a'},g).textContent=ma!=null?('замер '+fmtA(ma)+' м²'):('эскиз '+fmtA(sa)+' м²');
+    if(r.area)el('text',{x,y:y+28,class:ma!=null?'am':'a'},g).textContent=ma!=null?('замер '+fmtA(ma)+' м²'):((BTI[r.id]&&BTI[r.id].W?'БТИ ':'эскиз ')+fmtA(sa)+' м²');
   });
   updPlanTitle();
 }
@@ -780,7 +787,7 @@ function mkCell(r,f){
   const lab=document.createElement('label');lab.htmlFor=id;lab.textContent=f.label;
   const inp=document.createElement('input');inp.id=id;inp.type='number';inp.inputMode='numeric';inp.min='0';inp.step='1';inp.placeholder='мм';inp.autocomplete='off';inp.dataset.room=r.id;inp.dataset.k=f.k;
   const meta=document.createElement('div');meta.className='meta';
-  const dz=document.createElement('span');dz.textContent=f.design==null?'':'эскиз '+(f.approx?'≈':'')+f.design;
+  const dz=document.createElement('span');dz.textContent=f.design==null?'':(f.bti?'БТИ ':'эскиз ')+(f.approx?'≈':'')+f.design;
   const dl=document.createElement('span');dl.className='delta';dl.id='dl-'+r.id+'-'+f.k;
   meta.append(dz,dl);t.append(lab,inp,meta);return t;
 }
@@ -814,7 +821,7 @@ function buildRooms(){
     const st=document.createElement('div');st.className='rstats';st.id='rs-'+r.id;body.appendChild(st);
     {const pr=document.createElement('div');pr.className='projrow';pr.innerHTML='<label for="pa-'+r.id+'">Площадь по проекту, м²</label><input id="pa-'+r.id+'" class="pa" inputmode="decimal" autocomplete="off" data-room="'+r.id+'"><button type="button" class="secondary-btn sm" data-resetpa="'+r.id+'" title="Вернуть значение с чертежа застройщика">Как на чертеже</button>';body.appendChild(pr);}
     const fs=FIELDS[r.id];
-    {const b=grp('Размеры','эскиз · замер · Δ','≈ — размер снят с чертежа, в эскизе его не было');b.appendChild(cells(r,fs.filter(f=>f.grp==='dims')));
+    {const b=grp('Размеры','БТИ/эскиз · замер · Δ','БТИ — размер из техпаспорта; ≈ — снят с чертежа');b.appendChild(cells(r,fs.filter(f=>f.grp==='dims')));
       if(r.chains.length){const c=document.createElement('div');c.className='chains';c.id='ch-'+r.id;b.appendChild(c);}
       body.appendChild(b);}
     {const b=grp('Окна и двери','≈ по чертежу');itemsOf(r).filter(o=>TYPES[o.type].k==='open').forEach(o=>b.appendChild(itemBlock(r,o)));
@@ -872,8 +879,8 @@ function refreshDerived(){
     const cs=document.getElementById('cs-'+r.id);if(cs)cs.className='st'+(worst?' '+worst:'');
     const cp=document.getElementById('cp-'+r.id);if(cp)cp.textContent=pct?pct+'%':'';
     const rs=document.getElementById('rs-'+r.id);
-    if(rs){let h=pillHTML('Проект '+fmtA(projOf(r))+' м²','');
-      if(r.area){const s=areaOf(r,false),m=areaOf(r,true);h+=pillHTML('Эскиз '+fmtA(s)+' м²','');if(m!=null)h+='<span class="pill p-acc">Замер '+fmtA(m)+' м²</span>';
+    if(rs){let h=pillHTML('Проект '+fmtA(projOf(r))+' м²','');if(BTI_AREA[r.id]!=null)h+=pillHTML('БТИ '+fmtA(BTI_AREA[r.id])+' м²','');
+      if(r.area){const s=areaOf(r,false),m=areaOf(r,true);h+=pillHTML((BTI[r.id]&&BTI[r.id].W?'По размерам БТИ ':'Эскиз ')+fmtA(s)+' м²','');if(m!=null)h+='<span class="pill p-acc">Замер '+fmtA(m)+' м²</span>';
         const dev=s!=null?Math.round((s-projOf(r))/projOf(r)*100):0;if(Math.abs(dev)>=12)h+=pillHTML('Эскиз '+(dev>0?'+':'')+dev+'% к проекту — перемерить','warn');}
       gs.forEach(g=>h+=pillHTML(GEO_NAME[g.t]+' '+g.d+' мм',g.c));rs.innerHTML=h;}
     const chEl=document.getElementById('ch-'+r.id);
@@ -1091,7 +1098,7 @@ function fieldPos(r,f){if(f.pos)return f.pos;const mm=/^(h|fl)(\d)$/.exec(f.k);i
 function openSheet(key){
   const {r,f,rid,k}=fieldOf(key);if(!f)return;shKey=key;
   document.getElementById('shRoom').textContent=r.name;document.getElementById('shLbl').textContent=f.full;
-  document.getElementById('shDz').textContent=f.design==null?'—':(f.approx?'≈':'')+f.design;
+  document.getElementById('shDz').textContent=f.design==null?'—':(f.approx?'≈':'')+f.design;document.getElementById('shDzL').textContent=f.bti?'БТИ':'эскиз';
   const v=val(rid,k);shIn.value=v==null?'':String(v);
   sh.hidden=false;S.active=key;drawDynamic();updShDelta();updShChain();
   const L=orderList(),i=L.indexOf(key);document.getElementById('shPrev').disabled=i<=0;
